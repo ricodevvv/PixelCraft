@@ -1,0 +1,279 @@
+@import "tailwindcss";
+
+:root {
+  --hue: 145;
+  --bg: #07060d;
+  --bg-2: #0d0b17;
+  --surface: #13111d;
+  --surface-2: #1b1828;
+  --surface-3: #242036;
+  --line: #2b2740;
+  --line-strong: #3d3858;
+  --text: #f2f0fb;
+  --muted: #9c97b6;
+  --faint: #67627f;
+  --accent: oklch(0.87 0.2 var(--hue));
+  --accent-strong: oklch(0.76 0.21 var(--hue));
+  --accent-deep: oklch(0.42 0.13 var(--hue));
+  --accent-ink: oklch(0.2 0.07 var(--hue));
+  --accent-2: oklch(0.72 0.22 calc(var(--hue) + 150));
+  --accent-3: oklch(0.85 0.15 calc(var(--hue) - 70));
+  --danger: #ff5d73;
+  --warning: #ffc24b;
+  --step: 4px;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-pixel: "Pixelify Sans", var(--font-geist-sans), sans-serif;
+  --font-label: "Silkscreen", var(--font-geist-mono), monospace;
+}
+
+html {
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+@utility pixel-clip {
+  clip-path: polygon(
+    0 calc(var(--step) * 2),
+    var(--step) calc(var(--step) * 2),
+    var(--step) var(--step),
+    calc(var(--step) * 2) var(--step),
+    calc(var(--step) * 2) 0,
+    calc(100% - var(--step) * 2) 0,
+    calc(100% - var(--step) * 2) var(--step),
+    calc(100% - var(--step)) var(--step),
+    calc(100% - var(--step)) calc(var(--step) * 2),
+    100% calc(var(--step) * 2),
+    100% calc(100% - var(--step) * 2),
+    calc(100% - var(--step)) calc(100% - var(--step) * 2),
+    calc(100% - var(--step)) calc(100% - var(--step)),
+    calc(100% - var(--step) * 2) calc(100% - var(--step)),
+    calc(100% - var(--step) * 2) 100%,
+    calc(var(--step) * 2) 100%,
+    calc(var(--step) * 2) calc(100% - var(--step)),
+    var(--step) calc(100% - var(--step)),
+    var(--step) calc(100% - var(--step) * 2),
+    0 calc(100% - var(--step) * 2)
+  );
+}
+
+@layer components {
+  .pixel-frame {
+    --frame: var(--line);
+    --fill: var(--surface);
+    position: relative;
+    isolation: isolate;
+    background: var(--frame);
+  }
+
+  .pixel-frame::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    z-index: -1;
+    background: var(--fill);
+    clip-path: inherit;
+  }
+
+  .btn {
+    @apply pixel-clip font-label relative inline-flex items-center justify-center gap-2 px-5 py-3 text-[14px] uppercase transition-[filter,background-color] duration-150 select-none;
+    box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.28), inset 0 2px 0 rgb(255 255 255 / 0.25);
+  }
+
+  .btn:hover {
+    filter: brightness(1.08);
+  }
+
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.28), inset 0 2px 0 rgb(255 255 255 / 0.2);
+  }
+
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-50;
+    transform: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .btn-ghost {
+    background: var(--surface-3);
+    color: var(--text);
+    box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.3), inset 0 2px 0 rgb(255 255 255 / 0.06);
+  }
+
+  .btn-ghost:hover {
+    background: var(--line-strong);
+  }
+
+  .btn-danger {
+    background: var(--danger);
+    color: #2a0610;
+  }
+
+  .btn-sm {
+    @apply px-3 py-2 text-[12px];
+    --step: 3px;
+  }
+
+  .slot {
+    background:
+      linear-gradient(135deg, rgb(255 255 255 / 0.05), transparent 40%),
+      radial-gradient(circle at 50% 60%, color-mix(in oklch, var(--accent) 14%, transparent), transparent 65%),
+      var(--bg-2);
+    box-shadow:
+      inset 3px 3px 0 rgb(0 0 0 / 0.45),
+      inset -3px -3px 0 rgb(255 255 255 / 0.04);
+  }
+
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .text-gradient {
+    background: linear-gradient(100deg, var(--accent) 10%, var(--accent-3) 45%, var(--accent-2) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .eyebrow {
+    @apply font-label inline-flex items-center gap-2 text-xs tracking-[0.12em] text-accent uppercase;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+    box-shadow: 0 0 12px currentColor;
+  }
+
+  .input {
+    @apply pixel-clip w-full bg-bg-2 px-4 py-3 text-[15px] text-text outline-none placeholder:text-faint;
+    --step: 3px;
+    box-shadow: inset 0 0 0 2px var(--line);
+    transition: box-shadow 150ms;
+  }
+
+  .input:focus {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+
+  .badge {
+    @apply pixel-clip font-label inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase;
+    --step: 2px;
+  }
+
+  .noise {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+  }
+
+  .pixelated {
+    image-rendering: pixelated;
+  }
+}
+
+.voxel {
+  --size: 80px;
+  width: var(--size);
+  height: var(--size);
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.voxel > span {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.25);
+}
+
+.voxel > span:nth-child(1) { transform: translateZ(calc(var(--size) / 2)); }
+.voxel > span:nth-child(2) { transform: rotateY(180deg) translateZ(calc(var(--size) / 2)); filter: brightness(0.6); }
+.voxel > span:nth-child(3) { transform: rotateY(90deg) translateZ(calc(var(--size) / 2)); filter: brightness(0.75); }
+.voxel > span:nth-child(4) { transform: rotateY(-90deg) translateZ(calc(var(--size) / 2)); filter: brightness(0.85); }
+.voxel > span:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--size) / 2)); filter: brightness(1.15); }
+.voxel > span:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--size) / 2)); filter: brightness(0.5); }
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.caret::after {
+  content: "_";
+  animation: blink 1s steps(1) infinite;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
