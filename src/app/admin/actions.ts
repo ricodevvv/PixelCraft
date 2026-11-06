@@ -15,6 +15,7 @@ import { cancelOrder, markOrderPaid, recoverOrder, refundOrder } from "@/lib/ord
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { clientIp, rateLimit, resetRateLimit } from "@/lib/rate-limit";
+import { isStorageConfigured, uploadFile } from "@/lib/storage";
 import { getBaseUrl } from "@/lib/url";
 
 export type FormState = { error?: string; ok?: string } | null;
@@ -354,5 +355,29 @@ export async function testEmail(_state: FormState, form: FormData): Promise<Form
     return { ok: `Test receipt sent to ${parsed.data}.` };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Couldn't reach Resend." };
+  }
+}
+
+const IMAGE_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+export async function uploadImage(form: FormData): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+  if (!isStorageConfigured()) return { error: "Uploads need an S3 bucket (S3_BUCKET and keys). Paste an image URL instead." };
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Pick an image first." };
+  const extension = IMAGE_TYPES[file.type];
+  if (!extension) return { error: "Use a PNG, JPG, WebP or GIF image." };
+  if (file.size > MAX_IMAGE_BYTES) return { error: "Images can be up to 4 MB." };
+  const folder = form.get("folder") === "categories" ? "categories" : "products";
+  try {
+    return { url: await uploadFile(folder, extension, await file.arrayBuffer(), file.type) };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Upload failed." };
   }
 }

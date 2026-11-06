@@ -1,8 +1,10 @@
 import type { Category, Product } from "@/lib/db/schema";
 import { toMajor } from "@/lib/money";
+import { isStorageConfigured } from "@/lib/storage";
 import { saveProduct } from "@/app/admin/actions";
 import { AdminForm } from "./form";
 import { Field, Panel, Toggle } from "./field";
+import { ImageField } from "./image-field";
 import { SlugInput } from "./slug-input";
 
 type Props = { product?: Product; categories: Category[]; groups: string[]; currency: string };
@@ -22,9 +24,15 @@ export function ProductForm({ product, categories, groups, currency }: Props) {
             <Field label="Description" hint="Plain text, line breaks are kept.">
               <textarea name="description" defaultValue={product?.description} rows={7} className="input resize-y" />
             </Field>
-            <Field label="Image URL" hint="Optional. Leave it empty to use a generated pixel sprite.">
-              <input name="image" type="url" defaultValue={product?.image ?? ""} placeholder="https://..." className="input" />
-            </Field>
+            <ImageField
+              name="image"
+              label="Image"
+              hint="Optional. PNG, JPG, WebP or GIF up to 4 MB. Leave it empty to use a generated pixel sprite."
+              defaultValue={product?.image ?? ""}
+              folder="products"
+              uploadEnabled={isStorageConfigured()}
+              spriteSeed={product?.slug ?? ""}
+            />
           </div>
         </Panel>
 
