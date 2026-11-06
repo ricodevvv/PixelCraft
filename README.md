@@ -45,6 +45,10 @@ Add a webhook to `https://your-store/api/stripe/webhook` with `checkout.session.
 
 Paste a Discord webhook in **Admin → Settings** and every paid order gets posted to that channel with the player's head, the items and the total. Buyers who leave an email get a receipt in the store's language. Both have a test button at the bottom of the settings page.
 
+## Sales
+
+**Admin → Sales** schedules discounts for one category or the whole store, with a start and end date. While one is running the store shows a banner with a countdown, the old price struck through and a `-20%` badge on every product it covers. If two sales overlap, the bigger discount wins, and coupons apply on top of the sale price.
+
 ## Image uploads
 
 Uploads work with anything that speaks S3: AWS, Cloudflare R2, Backblaze B2, MinIO, DigitalOcean Spaces... The bucket only needs public reads, either through a bucket policy or a public domain you put in `S3_PUBLIC_URL`. For Cloudflare R2 that's:
