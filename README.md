@@ -39,11 +39,23 @@ With **Docker**, `docker compose up -d --build` starts Postgres and the store on
 
 ## Stripe
 
-Add a webhook to `https://your-store/api/stripe/webhook` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`, then put its signing secret in `STRIPE_WEBHOOK_SECRET`. Refunds work from either side, and the plugin gets a `REFUND` either way.
+Add a webhook to `https://your-store/api/stripe/webhook` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `invoice.paid`, `customer.subscription.updated` and `customer.subscription.deleted`, then put its signing secret in `STRIPE_WEBHOOK_SECRET`. Refunds work from either side, and the plugin gets a `REFUND` either way.
 
 ## Notifications
 
 Paste a Discord webhook in **Admin → Settings** and every paid order gets posted to that channel with the player's head, the items and the total. Buyers who leave an email get a receipt in the store's language. Both have a test button at the bottom of the settings page.
+
+## Gifts, gift cards and subscriptions
+
+Players can tick **It's a gift** in the cart and type someone else's username. The plugin delivers to that player, and the buyer still counts as the supporter.
+
+A product can be one of three kinds, picked in its admin page:
+
+- **Item or rank**, the normal one-time purchase.
+- **Gift card**: the buyer gets codes worth the product's price by email and on the success page. Codes work as balance in the cart, can be partly spent and are listed in **Admin → Gift cards**, where you can also make your own for giveaways. Gift cards skip sales and coupons and can't buy other gift cards.
+- **Subscription** (monthly or yearly), billed by Stripe. The first payment delivers it like any purchase. Renewals show up as orders without delivering again. When it's cancelled or stops being paid, the plugin gets a `REFUND` so your `onRefund` takes the rank away. Subscriptions are checked out alone, and sales don't apply to them because Stripe would keep that price forever (coupons only cut the first payment).
+
+Buyers manage or cancel their subscription from a link in their receipt, which opens Stripe's customer portal. Turn the portal on once in the Stripe dashboard (**Settings → Billing → Customer portal**). You can also cancel from the order page in the admin.
 
 ## Sales
 
