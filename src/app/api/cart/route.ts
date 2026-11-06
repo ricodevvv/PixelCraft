@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { priceCart } from "@/lib/orders";
+import { rateLimitByIp } from "@/lib/rate-limit";
 
 const bodySchema = z.object({
   lines: z.array(z.object({ productId: z.number().int(), quantity: z.number().int().min(1) })).max(50),
@@ -8,6 +9,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const limit = await rateLimitByIp("cart", 60, 60);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+  }
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 

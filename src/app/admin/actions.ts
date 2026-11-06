@@ -14,6 +14,7 @@ import { isDiscordWebhook, isEmailConfigured, notifyOrderPaid, sendTestDiscord, 
 import { cancelOrder, markOrderPaid, recoverOrder, refundOrder } from "@/lib/orders";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { clientIp, rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import { getBaseUrl } from "@/lib/url";
 
 export type FormState = { error?: string; ok?: string } | null;
@@ -48,10 +49,16 @@ function refreshStore() {
 export async function login(_state: FormState, form: FormData): Promise<FormState> {
   const password = String(form.get("password") ?? "");
   if (!process.env.ADMIN_PASSWORD) return { error: "Set ADMIN_PASSWORD in your environment first." };
+  const ip = await clientIp();
+  const limit = await rateLimit("login", ip, 5, 15 * 60);
+  if (!limit.allowed) {
+    return { error: `Too many attempts. Try again in ${Math.ceil(limit.retryAfter / 60)} min.` };
+  }
   if (!checkPassword(password)) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     return { error: "Wrong password." };
   }
+  await resetRateLimit("login", ip);
   await createSession();
   redirect("/admin");
 }
@@ -327,7 +334,7 @@ export async function orderAction(form: FormData) {
   revalidatePath("/admin/orders");
 }
 
-export async function testDiscord(_state: FormState, _form: FormData): Promise<FormState> {
+export async function testDiscord(): Promise<FormState> {
   await requireAdmin();
   try {
     await sendTestDiscord(await getBaseUrl());

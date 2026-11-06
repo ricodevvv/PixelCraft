@@ -86,6 +86,7 @@ const en = {
     coupon_expired: "That coupon expired.",
     coupon_used: "That coupon ran out of uses.",
     payments_disabled: "Payments aren't set up yet. Tell the server staff!",
+    rate_limited: "Too many tries. Wait a minute and try again.",
     generic: "Something went wrong, try again.",
   },
   notify: {
@@ -192,6 +193,7 @@ const es: Dictionary = {
     coupon_expired: "Ese cupón ya expiró.",
     coupon_used: "Ese cupón ya se agotó.",
     payments_disabled: "Los pagos todavía no están configurados. ¡Avísale al staff!",
+    rate_limited: "Demasiados intentos. Espera un minuto y vuelve a intentar.",
     generic: "Algo salió mal, intenta otra vez.",
   },
   notify: {

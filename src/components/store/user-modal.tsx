@@ -81,7 +81,7 @@ export function UserModal() {
     try {
       const res = await fetch(`/api/player/${encodeURIComponent(trimmed)}`);
       if (!res.ok) {
-        setError(res.status === 404 ? dict.user.notFound : dict.user.invalid);
+        setError(res.status === 404 ? dict.user.notFound : res.status === 429 ? dict.errors.rate_limited : dict.user.invalid);
         gsap.fromTo(".modal-card", { x: -10 }, { x: 0, duration: 0.5, ease: "elastic.out(2, 0.2)" });
         return;
       }

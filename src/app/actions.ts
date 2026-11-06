@@ -7,6 +7,7 @@ import { getDb, schema } from "@/lib/db";
 import { resolvePlayer } from "@/lib/mojang";
 import { notifyOrderPaid } from "@/lib/notify";
 import { allocateDiscount, markOrderPaid, priceCart } from "@/lib/orders";
+import { rateLimitByIp } from "@/lib/rate-limit";
 import { getSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getBaseUrl } from "@/lib/url";
@@ -26,6 +27,7 @@ export type CheckoutResult = { url: string } | { error: string };
 export async function checkout(input: z.input<typeof checkoutSchema>): Promise<CheckoutResult> {
   const parsed = checkoutSchema.safeParse(input);
   if (!parsed.success) return { error: "invalid_request" };
+  if (!(await rateLimitByIp("checkout", 10, 60)).allowed) return { error: "rate_limited" };
   const { lines, coupon, email } = parsed.data;
 
   const settings = await getSettings();

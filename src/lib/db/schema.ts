@@ -137,6 +137,12 @@ export const servers = pgTable(
   (t) => [uniqueIndex("servers_secret_idx").on(t.secret)],
 );
 
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+});
+
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
 }));
