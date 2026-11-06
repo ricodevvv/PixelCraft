@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/money";
 import { couponProblem } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 import { AdminForm, ConfirmButton } from "@/components/admin/form";
+import { DateTimeInput } from "@/components/admin/date-time-input";
 import { Field, PageHeader, Panel } from "@/components/admin/field";
 import { createCoupon, deleteCoupon, toggleCoupon } from "../../actions";
 
@@ -83,7 +84,7 @@ export default async function CouponsPage() {
                 <input name="maxUses" type="number" min="1" className="input font-mono" />
               </Field>
               <Field label="Expires" hint="Optional.">
-                <input name="expiresAt" type="datetime-local" className="input font-mono" />
+                <DateTimeInput name="expiresAt" />
               </Field>
             </div>
           </AdminForm>
