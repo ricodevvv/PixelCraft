@@ -27,6 +27,8 @@ The store is on http://localhost:3000 and the panel on `/admin`.
 | `ADMIN_PASSWORD` | Password for `/admin`. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payments. Without them only free orders (100% coupons) go through. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | Email receipts through [Resend](https://resend.com). `EMAIL_FROM` needs a domain you verified there, like `Store <store@yourdomain.com>`. Without the key no emails go out. |
+| `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Image uploads from the admin to any S3 compatible bucket. Without them you paste image URLs instead. |
+| `S3_ENDPOINT`, `S3_REGION`, `S3_PUBLIC_URL` | Endpoint for non-AWS providers, region (`us-east-1` by default) and the public base URL images are served from. |
 | `APP_URL` | Public URL of the store, used for Stripe return links and the plugin config. |
 
 ## Deploying
@@ -42,6 +44,23 @@ Add a webhook to `https://your-store/api/stripe/webhook` with `checkout.session.
 ## Notifications
 
 Paste a Discord webhook in **Admin → Settings** and every paid order gets posted to that channel with the player's head, the items and the total. Buyers who leave an email get a receipt in the store's language. Both have a test button at the bottom of the settings page.
+
+## Image uploads
+
+Uploads work with anything that speaks S3: AWS, Cloudflare R2, Backblaze B2, MinIO, DigitalOcean Spaces... The bucket only needs public reads, either through a bucket policy or a public domain you put in `S3_PUBLIC_URL`. For Cloudflare R2 that's:
+
+```bash
+S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+S3_REGION=auto
+S3_BUCKET=pixelcraft
+S3_PUBLIC_URL=https://pub-xxxx.r2.dev
+```
+
+Images go to `products/` and `categories/` with random names, up to 4 MB each (PNG, JPG, WebP or GIF).
+
+## Rate limits
+
+Login, checkout, the username lookup and cart pricing are rate limited per IP, with the counters stored in Postgres so it works the same on Vercel or Docker. Five wrong admin passwords lock that IP out for 15 minutes.
 
 ## Connecting your server
 
