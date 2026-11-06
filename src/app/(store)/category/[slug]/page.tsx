@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { getCategoryWithProducts } from "@/lib/catalog";
 import { toCard } from "@/lib/card";
 import { getDictionary } from "@/lib/i18n";
+import { getActiveSales, saleFor } from "@/lib/sales";
 import { getSettings } from "@/lib/settings";
+import { SaleBanner } from "@/components/store/sale-banner";
 import { PixelSprite } from "@/components/ui/pixel-sprite";
 import { ProductCard } from "@/components/store/product-card";
 import { SectionHeading } from "@/components/store/section-heading";
@@ -16,8 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryPage({ params }: Props) {
-  const [data, settings] = await Promise.all([getCategoryWithProducts((await params).slug), getSettings()]);
+  const [data, settings, sales] = await Promise.all([getCategoryWithProducts((await params).slug), getSettings(), getActiveSales()]);
   if (!data) notFound();
+  const sale = saleFor({ categoryId: data.category.id }, sales);
   const dict = getDictionary(settings.locale);
   const { category, products } = data;
 
@@ -40,10 +43,20 @@ export default async function CategoryPage({ params }: Props) {
           </div>
         </div>
 
+        {sale && (
+          <SaleBanner
+            name={sale.name}
+            percent={sale.percent}
+            endsAt={sale.endsAt.toISOString()}
+            categoryName={sale.categoryName}
+            href="#products"
+          />
+        )}
+
         {products.length === 0 ? (
           <p className="mt-16 text-muted">{dict.product.empty}</p>
         ) : (
-          <div className="mt-14 grid grid-cols-2 gap-3 [perspective:1200px] sm:gap-5 lg:grid-cols-4">
+          <div id="products" className="mt-14 grid scroll-mt-28 grid-cols-2 gap-3 [perspective:1200px] sm:gap-5 lg:grid-cols-4">
             {products.map((product) => (
               <ProductCard key={product.id} product={toCard(product)} />
             ))}

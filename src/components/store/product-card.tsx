@@ -17,6 +17,7 @@ export type CardProduct = {
   price: number;
   comparePrice: number | null;
   maxQuantity: number;
+  sale?: { name: string; percent: number; endsAt: string } | null;
 };
 
 /**
@@ -91,7 +92,11 @@ export function ProductCard({ product }: { product: CardProduct }) {
               <PixelSprite seed={product.slug} className="size-full drop-shadow-[0_10px_20px_rgb(0_0_0/0.5)]" />
             )}
           </div>
-          {onSale && <span className="badge absolute top-3 left-3 bg-accent-2 text-white">{dict.product.sale}</span>}
+          {onSale && (
+            <span className="badge absolute top-3 left-3 bg-accent-2 text-white">
+              {product.sale ? `-${product.sale.percent}%` : dict.product.sale}
+            </span>
+          )}
         </div>
         <div className="relative mt-3 flex flex-1 flex-col px-1 sm:mt-4 sm:px-0">
           <h3 className="font-pixel text-lg leading-tight sm:text-xl">{product.name}</h3>

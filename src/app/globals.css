@@ -260,6 +260,10 @@ body {
 .voxel > span:nth-child(5) { transform: rotateX(90deg) translateZ(calc(var(--size) / 2)); filter: brightness(1.15); }
 .voxel > span:nth-child(6) { transform: rotateX(-90deg) translateZ(calc(var(--size) / 2)); filter: brightness(0.5); }
 
+@keyframes sale-stripes {
+  to { background-position: 51px 0; }
+}
+
 @keyframes blink {
   50% { opacity: 0; }
 }

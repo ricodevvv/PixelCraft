@@ -8,8 +8,10 @@ import { getProduct } from "@/lib/catalog";
 import { toCard } from "@/lib/card";
 import { getDictionary } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money";
+import { withSales } from "@/lib/sales";
 import { getSettings } from "@/lib/settings";
 import { AddToCart } from "@/components/store/add-to-cart";
+import { Countdown } from "@/components/store/countdown";
 import { ProductArt } from "@/components/store/product-art";
 import { ProductCard } from "@/components/store/product-card";
 import { SectionHeading } from "@/components/store/section-heading";
@@ -35,13 +37,15 @@ export default async function ProductPage({ params }: Props) {
   const onSale = product.comparePrice !== null && product.comparePrice > product.price;
 
   const related = category
-    ? await getDb()
+    ? await withSales(
+        await getDb()
         .select()
         .from(schema.products)
         .where(
           and(eq(schema.products.categoryId, category.id), eq(schema.products.active, true), ne(schema.products.id, product.id)),
         )
-        .limit(4)
+        .limit(4),
+      )
     : [];
 
   return (
@@ -59,7 +63,9 @@ export default async function ProductPage({ params }: Props) {
         <div className="flex flex-col justify-center" data-reveal>
           <div className="flex flex-wrap gap-2">
             {category && <span className="badge bg-surface-3 text-muted">{category.name}</span>}
-            {onSale && <span className="badge bg-accent-2 text-white">{dict.product.sale}</span>}
+            {onSale && (
+              <span className="badge bg-accent-2 text-white">{product.sale ? `-${product.sale.percent}%` : dict.product.sale}</span>
+            )}
           </div>
           <h1 className="font-pixel mt-4 text-5xl leading-none font-bold sm:text-6xl">{product.name}</h1>
           {product.tagline && <p className="mt-4 text-lg text-muted">{product.tagline}</p>}
@@ -68,6 +74,14 @@ export default async function ProductPage({ params }: Props) {
             <span className="font-pixel text-5xl text-accent">{money(product.price)}</span>
             {onSale && <span className="font-mono text-xl text-faint line-through">{money(product.comparePrice!)}</span>}
           </div>
+          {product.sale && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="font-label text-[11px] text-accent-3 uppercase">
+                {product.sale.name} · {dict.sale.endsIn}
+              </span>
+              <Countdown endsAt={product.sale.endsAt} units={dict.sale.units} size="sm" />
+            </div>
+          )}
 
           <div className="mt-8">
             <AddToCart product={toCard(product)} artId="product-art" />

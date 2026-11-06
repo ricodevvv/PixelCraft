@@ -89,6 +89,14 @@ const en = {
     rate_limited: "Too many tries. Wait a minute and try again.",
     generic: "Something went wrong, try again.",
   },
+  sale: {
+    off: "{n}% off",
+    endsIn: "Ends in",
+    everything: "everything",
+    on: "on",
+    shop: "Shop the sale",
+    units: { d: "d", h: "h", m: "m", s: "s" },
+  },
   notify: {
     newPurchase: "New purchase",
     player: "Player",
@@ -195,6 +203,14 @@ const es: Dictionary = {
     payments_disabled: "Los pagos todavía no están configurados. ¡Avísale al staff!",
     rate_limited: "Demasiados intentos. Espera un minuto y vuelve a intentar.",
     generic: "Algo salió mal, intenta otra vez.",
+  },
+  sale: {
+    off: "{n}% de descuento",
+    endsIn: "Termina en",
+    everything: "toda la tienda",
+    on: "en",
+    shop: "Ver la oferta",
+    units: { d: "d", h: "h", m: "m", s: "s" },
   },
   notify: {
     newPurchase: "Nueva compra",

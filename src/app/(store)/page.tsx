@@ -20,29 +20,34 @@ import { SectionHeading } from "@/components/store/section-heading";
 import { SupportersMarquee } from "@/components/store/supporters-marquee";
 import { formatMoney } from "@/lib/money";
 import { toCard } from "@/lib/card";
+import { getActiveSales, withSales } from "@/lib/sales";
+import { SaleBanner } from "@/components/store/sale-banner";
 
 async function getShowcase() {
   const featured = await getFeaturedProducts(8);
   if (featured.length > 0) return featured;
-  return getDb()
+  const latest = await getDb()
     .select()
     .from(schema.products)
     .where(eq(schema.products.active, true))
     .orderBy(desc(schema.products.createdAt))
     .limit(8);
+  return withSales(latest);
 }
 
 export default async function HomePage() {
   const settings = await getSettings();
   const dict = getDictionary(settings.locale);
-  const [products, categories, counts, supporters, top, revenue] = await Promise.all([
+  const [products, categories, counts, supporters, top, revenue, sales] = await Promise.all([
     getShowcase(),
     getCategories(),
     getProductCounts(),
     getRecentSupporters(12),
     getTopSupporter(),
     settings.monthlyGoal > 0 ? getMonthRevenue() : Promise.resolve(0),
+    getActiveSales(),
   ]);
+  const sale = sales[0];
 
   return (
     <>
@@ -53,6 +58,18 @@ export default async function HomePage() {
         hue={settings.accentHue}
         announcement={settings.announcement}
       />
+
+      {sale && (
+        <div className="px-5">
+          <SaleBanner
+            name={sale.name}
+            percent={sale.percent}
+            endsAt={sale.endsAt.toISOString()}
+            categoryName={sale.categoryName}
+            href={sale.categorySlug ? `/category/${sale.categorySlug}` : "#store"}
+          />
+        </div>
+      )}
 
       <SupportersMarquee supporters={supporters} />
 

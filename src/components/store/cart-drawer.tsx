@@ -11,7 +11,14 @@ import { lockScroll } from "./smooth-scroll";
 import { useStore } from "./store-provider";
 import { gsap, useGSAP } from "./gsap";
 
-type Quote = { subtotal: number; discount: number; total: number; coupon: string | null; couponError: string | null };
+type Quote = {
+  lines: { productId: number; quantity: number; total: number }[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  coupon: string | null;
+  couponError: string | null;
+};
 
 function errorText(dict: Dictionary, code: string) {
   return (dict.errors as Record<string, string>)[code] ?? dict.errors.generic;
@@ -90,6 +97,7 @@ export function CartDrawer() {
     return () => controller.abort();
   }, [cartOpen, cartKey, coupon, items]);
 
+  const lineTotals = new Map(quote?.lines.map((line) => [line.productId, line.total]) ?? []);
   const couponError = coupon && quote?.couponError ? errorText(dict, `coupon_${quote.couponError}`) : null;
 
   function submit() {
@@ -148,7 +156,7 @@ export function CartDrawer() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{item.name}</p>
-                  <p className="font-mono text-sm text-accent">{money(item.price * item.quantity)}</p>
+                  <p className="font-mono text-sm text-accent">{money(lineTotals.get(item.productId) ?? item.price * item.quantity)}</p>
                 </div>
                 <div className="flex items-center gap-1">
                   {item.maxQuantity > 1 && (
