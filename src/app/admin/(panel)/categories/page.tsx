@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { getDb, schema } from "@/lib/db";
 import { getProductCounts } from "@/lib/catalog";
 import { PageHeader } from "@/components/admin/field";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
+import { ItemImage } from "@/components/ui/item-image";
 
 export const metadata: Metadata = { title: "Categories" };
 
@@ -37,11 +37,7 @@ export default async function CategoriesPage() {
               className="pixel-clip pixel-frame flex items-center gap-4 p-5 [--step:5px] hover:[--frame:var(--accent-deep)]"
             >
               <span className="slot pixel-clip grid size-14 shrink-0 place-items-center [--step:3px]">
-                {category.image ? (
-                  <img src={category.image} alt="" className="size-10 object-contain" />
-                ) : (
-                  <PixelSprite seed={`category-${category.slug}`} className="size-10" />
-                )}
+                <ItemImage src={category.image} seed={`category-${category.slug}`} className="size-10 object-contain" spriteClassName="size-10" />
               </span>
               <span className="min-w-0">
                 <span className="font-pixel block text-xl">{category.name}</span>

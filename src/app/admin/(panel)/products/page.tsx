@@ -6,7 +6,7 @@ import { getDb, schema } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 import { getSettings } from "@/lib/settings";
 import { PageHeader, Panel } from "@/components/admin/field";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
+import { ItemImage } from "@/components/ui/item-image";
 
 export const metadata: Metadata = { title: "Products" };
 
@@ -50,11 +50,7 @@ export default async function ProductsPage() {
                     <td className="px-6 py-3">
                       <Link href={`/admin/products/${product.id}`} className="flex items-center gap-3">
                         <span className="slot pixel-clip grid size-10 shrink-0 place-items-center [--step:2px]">
-                          {product.image ? (
-                            <img src={product.image} alt="" className="size-7 object-contain" />
-                          ) : (
-                            <PixelSprite seed={product.slug} className="size-7" />
-                          )}
+                          <ItemImage src={product.image} seed={product.slug} className="size-7 object-contain" spriteClassName="size-7" />
                         </span>
                         <span>
                           <span className="block font-semibold hover:text-accent">{product.name}</span>

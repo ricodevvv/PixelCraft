@@ -10,6 +10,7 @@ import { PlayerAvatar } from "./player-avatar";
 import { lockScroll } from "./smooth-scroll";
 import { useStore } from "./store-provider";
 import { gsap, useGSAP } from "./gsap";
+import { ItemImage } from "@/components/ui/item-image";
 
 type Quote = {
   lines: { productId: number; quantity: number; total: number }[];
@@ -160,11 +161,7 @@ export function CartDrawer() {
             items.map((item) => (
               <div key={item.productId} className="drawer-stagger pixel-clip pixel-frame flex items-center gap-3 p-3 [--step:4px]">
                 <div className="slot pixel-clip grid size-14 shrink-0 place-items-center [--step:3px]">
-                  {item.image ? (
-                    <img src={item.image} alt="" className="size-10 object-contain" />
-                  ) : (
-                    <PixelSprite seed={item.slug} className="size-10" />
-                  )}
+                  <ItemImage src={item.image} seed={item.slug} className="size-10 object-contain" spriteClassName="size-10" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{item.name}</p>

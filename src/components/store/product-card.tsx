@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { cart } from "@/lib/cart-store";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
 import { useStore } from "./store-provider";
 import { gsap, prefersReducedMotion } from "./gsap";
+import { ItemImage } from "@/components/ui/item-image";
 
 export type CardProduct = {
   id: number;
@@ -97,11 +97,7 @@ export function ProductCard({ product }: { product: CardProduct }) {
         <div className="slot pixel-clip relative grid aspect-square place-items-center overflow-hidden [--step:5px]">
           <div className="grid-bg absolute inset-0 opacity-50" />
           <div ref={art} className="relative size-[58%] will-change-transform">
-            {product.image ? (
-              <img src={product.image} alt="" className="size-full object-contain drop-shadow-[0_10px_20px_rgb(0_0_0/0.5)]" />
-            ) : (
-              <PixelSprite seed={product.slug} className="size-full drop-shadow-[0_10px_20px_rgb(0_0_0/0.5)]" />
-            )}
+            <ItemImage src={product.image} seed={product.slug} className="size-full object-contain drop-shadow-[0_10px_20px_rgb(0_0_0/0.5)]" spriteClassName="size-full drop-shadow-[0_10px_20px_rgb(0_0_0/0.5)]" />
           </div>
           {onSale && (
             <span className="badge absolute top-3 left-3 bg-accent-2 text-white">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
+import { ItemImage } from "@/components/ui/item-image";
 
 type Props = { slug: string; name: string; description: string; image: string | null; count: number; index: number; itemsLabel: string };
 
@@ -12,11 +12,7 @@ export function CategoryTile({ slug, name, description, image, count, index, ite
       className="group pixel-clip pixel-frame relative flex min-h-56 flex-col justify-between overflow-hidden p-6 [--step:6px] hover:[--frame:var(--accent-deep)]"
     >
       <div className="absolute -top-6 -right-6 size-40 opacity-20 transition-all duration-500 group-hover:scale-125 group-hover:rotate-12 group-hover:opacity-50">
-        {image ? (
-          <img src={image} alt="" className="size-full object-contain" />
-        ) : (
-          <PixelSprite seed={`category-${slug}`} className="size-full" />
-        )}
+        <ItemImage src={image} seed={`category-${slug}`} className="size-full object-contain" spriteClassName="size-full" />
       </div>
       <span className="font-label text-xs text-faint">{String(index + 1).padStart(2, "0")}</span>
       <div className="relative">

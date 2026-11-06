@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { ImageUp, LoaderCircle, X } from "lucide-react";
 import { uploadImage } from "@/app/admin/actions";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
+import { ItemImage } from "@/components/ui/item-image";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -58,10 +58,8 @@ export function ImageField({ name, label, hint, defaultValue, folder, uploadEnab
         <div className="slot pixel-clip relative grid size-24 shrink-0 place-items-center [--step:4px]">
           {pending ? (
             <LoaderCircle className="size-6 animate-spin text-accent" />
-          ) : url ? (
-            <img src={url} alt="" className="size-16 object-contain" />
           ) : (
-            <PixelSprite seed={spriteSeed || "new"} className="size-14 opacity-60" />
+            <ItemImage src={url} seed={spriteSeed || "new"} className="size-16 object-contain" spriteClassName="size-14 opacity-60" />
           )}
         </div>
         <div className="min-w-0 flex-1 space-y-2">

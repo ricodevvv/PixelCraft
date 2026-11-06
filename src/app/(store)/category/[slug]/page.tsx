@@ -6,9 +6,9 @@ import { getDictionary } from "@/lib/i18n";
 import { getActiveSales, saleFor } from "@/lib/sales";
 import { getSettings } from "@/lib/settings";
 import { SaleBanner } from "@/components/store/sale-banner";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
 import { ProductCard } from "@/components/store/product-card";
 import { SectionHeading } from "@/components/store/section-heading";
+import { ItemImage } from "@/components/ui/item-image";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -31,11 +31,7 @@ export default async function CategoryPage({ params }: Props) {
       <section className="mx-auto max-w-7xl px-5 pt-36">
         <div className="flex flex-col gap-8 md:flex-row md:items-center">
           <div className="slot pixel-clip grid size-28 shrink-0 place-items-center [--step:6px]" data-reveal>
-            {category.image ? (
-              <img src={category.image} alt="" className="size-20 object-contain" />
-            ) : (
-              <PixelSprite seed={`category-${category.slug}`} className="size-20" />
-            )}
+            <ItemImage src={category.image} seed={`category-${category.slug}`} className="size-20 object-contain" spriteClassName="size-20" />
           </div>
           <div className="flex-1">
             <SectionHeading eyebrow={`${products.length} ${dict.product.items}`} title={category.name} />

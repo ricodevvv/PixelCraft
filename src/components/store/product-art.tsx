@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { PixelSprite } from "@/components/ui/pixel-sprite";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
+import { ItemImage } from "@/components/ui/item-image";
 
 /**
  * Big floating product art with orbiting pixel sparkles.
@@ -46,11 +46,7 @@ export function ProductArt({ id, slug, image, name }: { id: string; slug: string
       ))}
       <div className="relative flex flex-col items-center">
         <div id={id} className="art-item size-[min(60vw,22rem)]">
-          {image ? (
-            <img src={image} alt={name} className="size-full object-contain drop-shadow-[0_24px_30px_rgb(0_0_0/0.55)]" />
-          ) : (
-            <PixelSprite seed={slug} className="size-full drop-shadow-[0_24px_30px_rgb(0_0_0/0.55)]" />
-          )}
+          <ItemImage src={image} seed={slug} alt={name} className="size-full object-contain drop-shadow-[0_24px_30px_rgb(0_0_0/0.55)]" spriteClassName="size-full drop-shadow-[0_24px_30px_rgb(0_0_0/0.55)]" />
         </div>
         <div className="art-shadow mt-4 h-4 w-1/2 bg-black/60 blur-md" />
       </div>
