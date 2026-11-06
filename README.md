@@ -26,6 +26,7 @@ The store is on http://localhost:3000 and the panel on `/admin`.
 | `AUTH_SECRET` | Signs the admin cookie, 32+ chars (`openssl rand -base64 32`). |
 | `ADMIN_PASSWORD` | Password for `/admin`. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payments. Without them only free orders (100% coupons) go through. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Email receipts through [Resend](https://resend.com). `EMAIL_FROM` needs a domain you verified there, like `Store <store@yourdomain.com>`. Without the key no emails go out. |
 | `APP_URL` | Public URL of the store, used for Stripe return links and the plugin config. |
 
 ## Deploying
@@ -37,6 +38,10 @@ With **Docker**, `docker compose up -d --build` starts Postgres and the store on
 ## Stripe
 
 Add a webhook to `https://your-store/api/stripe/webhook` with `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired` and `charge.refunded`, then put its signing secret in `STRIPE_WEBHOOK_SECRET`. Refunds work from either side, and the plugin gets a `REFUND` either way.
+
+## Notifications
+
+Paste a Discord webhook in **Admin → Settings** and every paid order gets posted to that channel with the player's head, the items and the total. Buyers who leave an email get a receipt in the store's language. Both have a test button at the bottom of the settings page.
 
 ## Connecting your server
 
