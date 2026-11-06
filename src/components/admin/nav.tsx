@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BadgePercent, Boxes, FolderTree, LayoutDashboard, Receipt, Server, Settings, TicketPercent } from "lucide-react";
+import { BadgePercent, Boxes, FolderTree, Gift, LayoutDashboard, Receipt, Server, Settings, TicketPercent } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const links = [
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
   { href: "/admin/sales", label: "Sales", icon: BadgePercent },
   { href: "/admin/coupons", label: "Coupons", icon: TicketPercent },
+  { href: "/admin/gift-cards", label: "Gift cards", icon: Gift },
   { href: "/admin/servers", label: "Servers", icon: Server },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

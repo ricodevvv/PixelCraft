@@ -18,7 +18,17 @@ export type CardProduct = {
   comparePrice: number | null;
   maxQuantity: number;
   sale?: { name: string; percent: number; endsAt: string } | null;
+  kind?: "item" | "subscription" | "giftcard";
+  interval?: "month" | "year" | null;
 };
+
+/**
+ * "/mo" or "/yr" after a subscription price, nothing for one-time products.
+ */
+export function intervalSuffix(product: Pick<CardProduct, "kind" | "interval">, labels: { perMonth: string; perYear: string }) {
+  if (product.kind !== "subscription") return "";
+  return product.interval === "year" ? labels.perYear : labels.perMonth;
+}
 
 /**
  * Store item card with a 3D tilt that follows the cursor and a fly-to-cart button.
@@ -59,7 +69,8 @@ export function ProductCard({ product }: { product: CardProduct }) {
         name: product.name,
         price: product.price,
         image: product.image,
-        maxQuantity: product.maxQuantity,
+        maxQuantity: product.kind === "subscription" ? 1 : product.maxQuantity,
+        interval: product.kind === "subscription" ? product.interval ?? "month" : null,
       },
       1,
     );
@@ -106,7 +117,10 @@ export function ProductCard({ product }: { product: CardProduct }) {
               {onSale && (
                 <span className="block font-mono text-xs text-faint line-through">{money(product.comparePrice!)}</span>
               )}
-              <span className="font-pixel text-xl text-accent sm:text-2xl">{money(product.price)}</span>
+              <span className="font-pixel text-xl text-accent sm:text-2xl">
+                {money(product.price)}
+                <span className="text-sm text-muted">{intervalSuffix(product, dict.product)}</span>
+              </span>
             </div>
             <button
               type="button"

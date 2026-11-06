@@ -27,6 +27,8 @@ const products = [
   { slug: "pet-dragon", name: "Pet Dragon", tagline: "A tiny dragon that follows you around.", price: 599, category: "cosmetics", itemId: "pet-dragon", featured: true },
   { slug: "crown-hat", name: "Crown Hat", tagline: "Because you're royalty.", price: 149, category: "cosmetics", itemId: "hat-crown" },
   { slug: "coins-1000", name: "1,000 Coins", tagline: "A quick boost for your wallet.", price: 199, category: "economy", itemId: "eco-bundle", featured: true, maxQuantity: 20 },
+  { slug: "vip-plus-monthly", name: "VIP+ Monthly", tagline: "All VIP perks plus a monthly crate. Cancel anytime.", price: 399, category: "ranks", itemId: "rank-vip", featured: true, kind: "subscription" as const, interval: "month" as const },
+  { slug: "gift-card-10", name: "Gift Card $10", tagline: "A code worth $10 to spend in the store or give to a friend.", price: 1000, category: "economy", itemId: "", featured: true, kind: "giftcard" as const, maxQuantity: 5 },
   { slug: "xp-booster", name: "XP Booster", tagline: "Double XP for the whole server, 1 hour.", price: 349, category: "economy", itemId: "booster-xp", featured: true, maxQuantity: 5 },
 ];
 
@@ -46,7 +48,7 @@ async function main() {
         ...product,
         description: `${product.tagline}\n\nDelivered automatically by PixelBuy as soon as you're online.`,
         categoryId: bySlug.get(category) ?? null,
-        group: "survival",
+        group: "kind" in product && product.kind === "giftcard" ? "" : "survival",
         sort: index,
       })),
     )

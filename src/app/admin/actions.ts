@@ -11,7 +11,7 @@ import { getDb, schema } from "@/lib/db";
 import { locales } from "@/lib/i18n";
 import { toMinor } from "@/lib/money";
 import { isDiscordWebhook, isEmailConfigured, notifyOrderPaid, sendTestDiscord, sendTestEmail } from "@/lib/notify";
-import { cancelOrder, markOrderPaid, recoverOrder, refundOrder } from "@/lib/orders";
+import { cancelOrder, endSubscription, markOrderPaid, newGiftCode, normalizeGiftCode, recoverOrder, refundOrder } from "@/lib/orders";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { clientIp, rateLimit, resetRateLimit } from "@/lib/rate-limit";
@@ -89,13 +89,33 @@ async function productInput(form: FormData) {
         .string()
         .transform((value) => (value ? Number(value) : null))
         .pipe(z.number().int().nullable()),
-      group: groupName,
-      itemId: z.string().trim().min(1, "PixelBuy item id is required").max(120),
+      kind: z.enum(["item", "subscription", "giftcard"]).default("item"),
+      interval: z.enum(["month", "year"]).default("month"),
+      group: z.string().trim().max(64),
+      itemId: z.string().trim().max(120),
       maxQuantity: z.coerce.number().int().min(1).max(999),
       sort: z.coerce.number().int(),
       featured: checkbox,
       active: checkbox,
     })
+    .superRefine((value, ctx) => {
+      if (value.kind !== "giftcard") {
+        if (!groupName.safeParse(value.group).success) {
+          ctx.addIssue({ code: "custom", path: ["group"], message: "Server group is required, letters, numbers, dots, dashes or underscores" });
+        }
+        if (!value.itemId) ctx.addIssue({ code: "custom", path: ["itemId"], message: "PixelBuy item id is required" });
+      }
+      if (value.kind !== "item" && value.price <= 0) {
+        ctx.addIssue({ code: "custom", path: ["price"], message: "Subscriptions and gift cards need a price above zero" });
+      }
+    })
+    .transform((value) => ({
+      ...value,
+      interval: value.kind === "subscription" ? value.interval : null,
+      group: value.kind === "giftcard" ? "" : value.group,
+      itemId: value.kind === "giftcard" ? "" : value.itemId,
+      maxQuantity: value.kind === "subscription" ? 1 : value.maxQuantity,
+    }))
     .safeParse(Object.fromEntries(form));
 }
 
@@ -319,8 +339,15 @@ export async function orderAction(form: FormData) {
     }
   } else if (action === "cancel") {
     await cancelOrder(id);
+  } else if (action === "cancel-subscription") {
+    const [order] = await getDb().select().from(schema.orders).where(eq(schema.orders.id, id)).limit(1);
+    if (order?.stripeSubscriptionId) {
+      await cancelStripeSubscription(order.stripeSubscriptionId);
+      await endSubscription(order.stripeSubscriptionId);
+    }
   } else if (action === "refund") {
     const [order] = await getDb().select().from(schema.orders).where(eq(schema.orders.id, id)).limit(1);
+    if (order?.stripeSubscriptionId) await cancelStripeSubscription(order.stripeSubscriptionId);
     if (order?.stripePaymentIntent && isStripeConfigured()) {
       try {
         await getStripe().refunds.create({ payment_intent: order.stripePaymentIntent });
@@ -330,6 +357,7 @@ export async function orderAction(form: FormData) {
       }
     }
     await refundOrder(id);
+    if (order?.stripeSubscriptionId) await endSubscription(order.stripeSubscriptionId);
   }
   revalidatePath(`/admin/orders/${id}`);
   revalidatePath("/admin/orders");
@@ -405,6 +433,51 @@ export async function deleteSale(form: FormData) {
   await getDb().delete(schema.sales).where(eq(schema.sales.id, Number(form.get("id"))));
   refreshStore();
   revalidatePath("/admin/sales");
+}
+
+
+async function cancelStripeSubscription(subscriptionId: string) {
+  if (!isStripeConfigured()) return;
+  try {
+    await getStripe().subscriptions.cancel(subscriptionId);
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code !== "resource_missing") throw error;
+  }
+}
+
+export async function createGiftCard(_state: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const { currency } = await getSettings();
+  const parsed = z
+    .object({
+      amount: z.coerce.number().positive("Amount must be above zero"),
+      code: z
+        .string()
+        .transform((value) => normalizeGiftCode(value))
+        .pipe(z.string().regex(/^$|^[A-Z0-9-]{6,40}$/, "Codes are 6-40 letters, numbers or dashes")),
+    })
+    .safeParse({ amount: form.get("amount"), code: form.get("code") ?? "" });
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+  const balance = toMinor(parsed.data.amount, currency);
+  const code = parsed.data.code || newGiftCode();
+  try {
+    await getDb().insert(schema.giftCards).values({ code, initialBalance: balance, balance, currency: currency.toUpperCase() });
+  } catch (error) {
+    if (isUniqueViolation(error)) return { error: "That code already exists." };
+    throw error;
+  }
+  revalidatePath("/admin/gift-cards");
+  return { ok: `Gift card ${code} created.` };
+}
+
+export async function toggleGiftCard(form: FormData) {
+  await requireAdmin();
+  await getDb()
+    .update(schema.giftCards)
+    .set({ active: form.get("active") === "true" })
+    .where(eq(schema.giftCards.id, Number(form.get("id"))));
+  revalidatePath("/admin/gift-cards");
 }
 
 const IMAGE_TYPES: Record<string, string> = {

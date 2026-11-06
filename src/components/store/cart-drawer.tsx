@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Minus, Plus, Tag, Trash2, X } from "lucide-react";
+import { Gift, Minus, Plus, Tag, Trash2, Wallet, X } from "lucide-react";
 import { checkout } from "@/app/actions";
 import { cart, useCart } from "@/lib/cart-store";
 import type { Dictionary } from "@/lib/i18n";
@@ -18,6 +18,10 @@ type Quote = {
   total: number;
   coupon: string | null;
   couponError: string | null;
+  giftCardAmount: number;
+  giftCardError: string | null;
+  due: number;
+  cartError: string | null;
 };
 
 function errorText(dict: Dictionary, code: string) {
@@ -26,9 +30,11 @@ function errorText(dict: Dictionary, code: string) {
 
 export function CartDrawer() {
   const { dict, money, cartOpen, setCartOpen, setUserOpen } = useStore();
-  const { items, player, coupon } = useCart();
+  const { items, player, coupon, giftCard, recipient } = useCart();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [couponInput, setCouponInput] = useState(coupon);
+  const [giftCardInput, setGiftCardInput] = useState(giftCard);
+  const [isGift, setIsGift] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -88,6 +94,7 @@ export function CartDrawer() {
       body: JSON.stringify({
         lines: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
         coupon: coupon || null,
+        giftCard: giftCard || null,
       }),
       signal: controller.signal,
     })
@@ -95,10 +102,13 @@ export function CartDrawer() {
       .then((data: Quote | null) => data && setQuote(data))
       .catch(() => {});
     return () => controller.abort();
-  }, [cartOpen, cartKey, coupon, items]);
+  }, [cartOpen, cartKey, coupon, giftCard, items]);
 
   const lineTotals = new Map(quote?.lines.map((line) => [line.productId, line.total]) ?? []);
   const couponError = coupon && quote?.couponError ? errorText(dict, `coupon_${quote.couponError}`) : null;
+  const giftCardError = giftCard && quote?.giftCardError ? errorText(dict, `giftcard_${quote.giftCardError}`) : null;
+  const cartError = quote?.cartError ? errorText(dict, quote.cartError) : null;
+  const suffix = (interval?: "month" | "year" | null) => (interval ? (interval === "year" ? dict.product.perYear : dict.product.perMonth) : "");
 
   function submit() {
     setError(null);
@@ -109,8 +119,10 @@ export function CartDrawer() {
     startTransition(async () => {
       const result = await checkout({
         player: player.name,
+        recipient: isGift && recipient.trim() ? recipient.trim() : null,
         email,
         coupon: coupon || null,
+        giftCard: giftCard || null,
         lines: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
       });
       if ("url" in result) {
@@ -156,7 +168,10 @@ export function CartDrawer() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{item.name}</p>
-                  <p className="font-mono text-sm text-accent">{money(lineTotals.get(item.productId) ?? item.price * item.quantity)}</p>
+                  <p className="font-mono text-sm text-accent">
+                    {money(lineTotals.get(item.productId) ?? item.price * item.quantity)}
+                    <span className="text-muted">{suffix(item.interval)}</span>
+                  </p>
                 </div>
                 <div className="flex items-center gap-1">
                   {item.maxQuantity > 1 && (
@@ -196,7 +211,7 @@ export function CartDrawer() {
         </div>
 
         {items.length > 0 && (
-          <div className="relative space-y-4 border-t-2 border-line bg-bg-2/80 px-6 py-5">
+          <div className="relative max-h-[72vh] space-y-4 overflow-y-auto border-t-2 border-line bg-bg-2/80 px-6 py-5" data-lenis-prevent>
             <form
               className="drawer-stagger flex gap-2"
               onSubmit={(event) => {
@@ -219,6 +234,56 @@ export function CartDrawer() {
             </form>
             {couponError && <p className="-mt-2 text-sm text-danger">{couponError}</p>}
 
+            <form
+              className="drawer-stagger flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                cart.setGiftCard(giftCardInput.trim().toUpperCase());
+              }}
+            >
+              <div className="relative flex-1">
+                <Wallet className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-faint" />
+                <input
+                  value={giftCardInput}
+                  onChange={(event) => setGiftCardInput(event.target.value)}
+                  placeholder={dict.cart.giftCard}
+                  className="input !py-2.5 !pl-9 font-mono uppercase"
+                />
+              </div>
+              <button type="submit" className="btn btn-ghost btn-sm">
+                {dict.cart.apply}
+              </button>
+            </form>
+            {giftCardError && <p className="-mt-2 text-sm text-danger">{giftCardError}</p>}
+
+            <div className="drawer-stagger">
+              <label className="flex cursor-pointer items-center gap-3 select-none">
+                <input type="checkbox" checked={isGift} onChange={(event) => setIsGift(event.target.checked)} className="peer sr-only" />
+                <span className="pixel-clip relative h-6 w-11 bg-surface-3 transition-colors peer-checked:bg-accent [--step:2px] after:absolute after:top-1 after:left-1 after:size-4 after:bg-text after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-accent-ink" />
+                <Gift className="size-4 text-accent-3" />
+                <span className="text-sm">{dict.cart.gift}</span>
+              </label>
+              {isGift && (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="slot pixel-clip grid size-11 shrink-0 place-items-center [--step:3px]">
+                    {recipient.trim().length >= 3 ? (
+                      <PlayerAvatar key={recipient.trim()} name={recipient.trim()} size={32} className="size-8" />
+                    ) : (
+                      <Gift className="size-5 text-faint" />
+                    )}
+                  </div>
+                  <input
+                    value={recipient}
+                    onChange={(event) => cart.setRecipient(event.target.value)}
+                    placeholder={dict.cart.recipient}
+                    maxLength={17}
+                    spellCheck={false}
+                    className="input !py-2.5 font-mono"
+                  />
+                </div>
+              )}
+            </div>
+
             <input
               type="email"
               value={email}
@@ -240,13 +305,22 @@ export function CartDrawer() {
                   <dd className="font-mono">-{money(quote.discount)}</dd>
                 </div>
               )}
+              {!!quote?.giftCardAmount && (
+                <div className="flex justify-between text-accent-3">
+                  <dt>{dict.cart.giftCardLine}</dt>
+                  <dd className="font-mono">-{money(quote.giftCardAmount)}</dd>
+                </div>
+              )}
               <div className="flex items-baseline justify-between pt-1">
-                <dt className="font-pixel text-lg">{dict.cart.total}</dt>
-                <dd className="font-pixel text-3xl text-accent">{money(quote?.total ?? localSubtotal)}</dd>
+                <dt className="font-pixel text-lg">{quote?.giftCardAmount ? dict.cart.due : dict.cart.total}</dt>
+                <dd className="font-pixel text-3xl text-accent">
+                  {money(quote?.due ?? localSubtotal)}
+                  <span className="text-base text-muted">{suffix(items.find((item) => item.interval)?.interval)}</span>
+                </dd>
               </div>
             </dl>
 
-            {error && <p className="text-sm text-danger">{error}</p>}
+            {(error || cartError) && <p className="text-sm text-danger">{error ?? cartError}</p>}
 
             <div className="drawer-stagger flex items-center gap-3">
               {player && (
@@ -259,7 +333,7 @@ export function CartDrawer() {
                   <span className="max-w-24 truncate">{player.name}</span>
                 </button>
               )}
-              <button type="button" onClick={submit} disabled={pending} className="btn btn-primary flex-1 text-lg">
+              <button type="button" onClick={submit} disabled={pending || Boolean(cartError)} className="btn btn-primary flex-1 text-lg">
                 {pending ? dict.cart.processing : player ? dict.cart.checkout : dict.cart.needUser}
               </button>
             </div>

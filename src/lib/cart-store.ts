@@ -10,14 +10,15 @@ export type CartItem = {
   image: string | null;
   quantity: number;
   maxQuantity: number;
+  interval?: "month" | "year" | null;
 };
 
 export type Player = { name: string; uuid: string | null };
 
-type State = { items: CartItem[]; player: Player | null; coupon: string };
+type State = { items: CartItem[]; player: Player | null; coupon: string; giftCard: string; recipient: string };
 
 const KEY = "pixelcraft:cart:v1";
-const EMPTY: State = { items: [], player: null, coupon: "" };
+const EMPTY: State = { items: [], player: null, coupon: "", giftCard: "", recipient: "" };
 
 let state: State = EMPTY;
 let loaded = false;
@@ -94,12 +95,18 @@ export const cart = {
     commit({ ...state, items: state.items.filter((entry) => entry.productId !== productId) });
   },
   clear() {
-    commit({ ...state, items: [], coupon: "" });
+    commit({ ...state, items: [], coupon: "", giftCard: "", recipient: "" });
   },
   setPlayer(player: Player | null) {
     commit({ ...state, player });
   },
   setCoupon(coupon: string) {
     commit({ ...state, coupon });
+  },
+  setGiftCard(giftCard: string) {
+    commit({ ...state, giftCard });
+  },
+  setRecipient(recipient: string) {
+    commit({ ...state, recipient });
   },
 };

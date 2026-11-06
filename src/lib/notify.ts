@@ -1,12 +1,13 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "./db";
-import type { Order, OrderItem } from "./db/schema";
+import type { GiftCard, Order, OrderItem, Subscription } from "./db/schema";
 import { getDictionary, type Dictionary } from "./i18n";
 import { formatMoney } from "./money";
 import { readSettings, type StoreSettings } from "./settings";
+import { subscriptionManageUrl } from "./subscription-link";
 
-type PaidOrder = Order & { items: OrderItem[] };
+type PaidOrder = Order & { items: OrderItem[]; giftCards: GiftCard[]; subscriptions: Subscription[] };
 
 const DISCORD_HOSTS = new Set(["discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com"]);
 
@@ -91,6 +92,8 @@ function discordEmbed(order: PaidOrder, settings: StoreSettings, dict: Dictionar
     { name: dict.notify.total, value: money(order.total), inline: true },
     { name: dict.notify.order, value: `#${order.id}`, inline: true },
   ];
+  if (order.giftFrom) fields.push({ name: dict.notify.giftFrom, value: escapeMarkdown(order.giftFrom), inline: true });
+  if (order.giftCardAmount > 0) fields.push({ name: dict.notify.paidWithGiftCard, value: money(order.giftCardAmount), inline: true });
   if (order.discount > 0 && order.couponCode) {
     fields.push({ name: dict.notify.discount, value: `${escapeMarkdown(order.couponCode)} (-${money(order.discount)})`, inline: true });
   }
@@ -99,7 +102,7 @@ function discordEmbed(order: PaidOrder, settings: StoreSettings, dict: Dictionar
     allowed_mentions: { parse: [] },
     embeds: [
       {
-        title: dict.notify.newPurchase,
+        title: order.items.some((item) => item.kind === "subscription") ? dict.notify.newSubscription : dict.notify.newPurchase,
         url: baseUrl,
         color: (r << 16) | (g << 8) | b,
         description: order.items.map((item) => `**${item.quantity}×** ${escapeMarkdown(item.name)}`).join("\n"),
@@ -112,7 +115,7 @@ function discordEmbed(order: PaidOrder, settings: StoreSettings, dict: Dictionar
   };
 }
 
-function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionary, baseUrl: string) {
+function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionary, baseUrl: string, manageUrl: string | null) {
   const money = (amount: number) => formatMoney(amount, order.currency, settings.locale);
   const accent = accentHex(settings.accentHue);
   const store = escapeHtml(settings.storeName);
@@ -132,6 +135,30 @@ function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionar
           <td style="padding:6px 0;color:${accent};text-align:right;font-family:Menlo,Consolas,monospace;">-${money(order.discount)}</td>
         </tr>`
       : "";
+  const giftCardRow =
+    order.giftCardAmount > 0
+      ? `<tr>
+          <td style="padding:6px 0;color:${accent};">${escapeHtml(dict.notify.paidWithGiftCard)}</td>
+          <td style="padding:6px 0;color:${accent};text-align:right;font-family:Menlo,Consolas,monospace;">-${money(order.giftCardAmount)}</td>
+        </tr>`
+      : "";
+  const giftLine = order.giftFrom
+    ? `<p style="margin:10px 0 0;font-size:14px;color:#f2f0fb;">${escapeHtml(dict.notify.giftFrom)} <strong>${escapeHtml(order.giftFrom)}</strong> → <strong>${escapeHtml(order.playerName)}</strong></p>`
+    : "";
+  const codesBlock = order.giftCards.length
+    ? `<div style="margin-top:24px;padding:16px;border:2px dashed ${accent};">
+          <p style="margin:0 0 10px;font-size:12px;color:#9c97b6;text-transform:uppercase;letter-spacing:1px;">${escapeHtml(dict.notify.codesTitle)}</p>
+          ${order.giftCards
+            .map(
+              (card) =>
+                `<p style="margin:6px 0;font-family:Menlo,Consolas,monospace;font-size:18px;color:#f2f0fb;letter-spacing:1px;">${escapeHtml(card.code)} <span style="color:${accent};font-size:14px;">${money(card.initialBalance)}</span></p>`,
+            )
+            .join("")}
+        </div>`
+    : "";
+  const manageBlock = manageUrl
+    ? `<p style="margin:20px 0 0;font-size:14px;"><a href="${escapeHtml(manageUrl)}" style="color:${accent};">${escapeHtml(dict.notify.manage)}</a></p>`
+    : "";
 
   const html = `<!doctype html>
 <html lang="${settings.locale}">
@@ -145,6 +172,7 @@ function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionar
         <tr><td style="background:#13111d;border:2px solid #2b2740;padding:28px;">
           <h1 style="margin:0;font-size:24px;line-height:1.25;color:#f2f0fb;">${escapeHtml(dict.notify.heading)}</h1>
           <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#9c97b6;">${escapeHtml(dict.notify.intro)}</p>
+          ${giftLine}
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;font-size:14px;">
             <tr>
               <td style="padding:0 0 12px;color:#67627f;text-transform:uppercase;letter-spacing:1px;font-size:11px;">${dict.notify.order} #${order.id}</td>
@@ -152,11 +180,14 @@ function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionar
             </tr>
             ${rows}
             ${discountRow}
+            ${giftCardRow}
             <tr>
               <td style="padding:14px 0 0;color:#f2f0fb;font-weight:700;font-size:16px;">${dict.notify.total}</td>
               <td style="padding:14px 0 0;color:${accent};text-align:right;font-weight:700;font-size:20px;font-family:Menlo,Consolas,monospace;">${money(order.total)}</td>
             </tr>
           </table>
+          ${codesBlock}
+          ${manageBlock}
           <a href="${escapeHtml(baseUrl)}" style="display:inline-block;margin-top:28px;background:${accent};color:#0b0a12;text-decoration:none;font-weight:700;font-size:14px;padding:12px 20px;">${escapeHtml(dict.notify.visit)}</a>
         </td></tr>
       </table>
@@ -173,8 +204,12 @@ function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionar
     "",
     `${dict.notify.order} #${order.id} · ${dict.notify.player}: ${order.playerName}`,
     ...order.items.map((item) => `${item.quantity}x ${item.name} - ${money(item.unitPrice * item.quantity)}`),
+    ...(order.giftFrom ? [`${dict.notify.giftFrom}: ${order.giftFrom}`] : []),
     ...(order.discount > 0 ? [`${dict.notify.discount}: -${money(order.discount)}`] : []),
+    ...(order.giftCardAmount > 0 ? [`${dict.notify.paidWithGiftCard}: -${money(order.giftCardAmount)}`] : []),
     `${dict.notify.total}: ${money(order.total)}`,
+    ...(order.giftCards.length ? ["", dict.notify.codesTitle, ...order.giftCards.map((card) => `${card.code} (${money(card.initialBalance)})`)] : []),
+    ...(manageUrl ? ["", `${dict.notify.manage}: ${manageUrl}`] : []),
     "",
     baseUrl,
   ].join("\n");
@@ -187,7 +222,10 @@ function receiptEmail(order: PaidOrder, settings: StoreSettings, dict: Dictionar
  * Failures are logged and swallowed, a notification should never break a sale.
  */
 export async function notifyOrderPaid(orderId: number, baseUrl: string) {
-  const order = await getDb().query.orders.findFirst({ where: eq(schema.orders.id, orderId), with: { items: true } });
+  const order = await getDb().query.orders.findFirst({
+    where: eq(schema.orders.id, orderId),
+    with: { items: true, giftCards: true, subscriptions: true },
+  });
   if (!order || order.status !== "paid") return;
   const settings = await readSettings();
   const dict = getDictionary(settings.locale);
@@ -197,7 +235,9 @@ export async function notifyOrderPaid(orderId: number, baseUrl: string) {
     jobs.push(postDiscord(settings.discordWebhook, discordEmbed(order, settings, dict, baseUrl)));
   }
   if (order.email && isEmailConfigured()) {
-    const email = receiptEmail(order, settings, dict, baseUrl);
+    const subscriptionId = order.stripeSubscriptionId ?? order.subscriptions[0]?.stripeSubscriptionId;
+    const manageUrl = subscriptionId ? await subscriptionManageUrl(baseUrl, subscriptionId) : null;
+    const email = receiptEmail(order, settings, dict, baseUrl, manageUrl);
     jobs.push(postEmail({ to: order.email, ...email }, `order-${order.id}-receipt`));
   }
 
@@ -212,18 +252,25 @@ function sampleOrder(settings: StoreSettings): PaidOrder {
     id: 0,
     playerName: "Notch",
     playerUuid: null,
+    giftFrom: null,
     email: null,
     status: "paid",
     currency: settings.currency,
     subtotal: 499,
     discount: 0,
     total: 499,
+    giftCardAmount: 0,
     couponCode: null,
     stripeSessionId: null,
     stripePaymentIntent: null,
+    stripeSubscriptionId: null,
+    stripeInvoiceId: null,
+    renewalOf: null,
     createdAt: now,
     paidAt: now,
-    items: [{ id: 0, orderId: 0, productId: null, name: "VIP", group: "survival", itemId: "rank-vip", quantity: 1, unitPrice: 499, total: 499 }],
+    items: [{ id: 0, orderId: 0, productId: null, name: "VIP", kind: "item", group: "survival", itemId: "rank-vip", quantity: 1, unitPrice: 499, total: 499 }],
+    giftCards: [],
+    subscriptions: [],
   };
 }
 
@@ -245,6 +292,6 @@ export async function sendTestDiscord(baseUrl: string) {
 export async function sendTestEmail(to: string, baseUrl: string) {
   const settings = await readSettings();
   const dict = getDictionary(settings.locale);
-  const email = receiptEmail(sampleOrder(settings), settings, dict, baseUrl);
+  const email = receiptEmail(sampleOrder(settings), settings, dict, baseUrl, null);
   await postEmail({ to, ...email, subject: `[Test] ${email.subject}` });
 }

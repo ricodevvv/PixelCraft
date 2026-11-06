@@ -15,5 +15,7 @@ export function toCard(product: Product & { sale?: SaleInfo | null }) {
     comparePrice: product.comparePrice,
     maxQuantity: product.maxQuantity,
     sale: product.sale ?? null,
+    kind: product.kind,
+    interval: product.interval,
   };
 }

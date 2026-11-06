@@ -69,6 +69,9 @@ export default async function ProductsPage() {
                     <td className="px-3 py-3 text-right font-mono">{formatMoney(product.price, settings.currency)}</td>
                     <td className="px-6 py-3 text-right">
                       <span className="inline-flex gap-1">
+                        {product.kind !== "item" && (
+                          <span className="badge bg-warning/15 text-warning">{product.kind === "giftcard" ? "gift card" : `per ${product.interval ?? "month"}`}</span>
+                        )}
                         {product.featured && <span className="badge bg-accent-2/20 text-accent-3">featured</span>}
                         <span className={`badge ${product.active ? "bg-accent/15 text-accent" : "bg-surface-3 text-faint"}`}>
                           {product.active ? "live" : "hidden"}

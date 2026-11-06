@@ -24,14 +24,29 @@ export default async function OrderPage({ params }: Props) {
   if (!Number.isInteger(id)) notFound();
   const order = await getDb().query.orders.findFirst({
     where: eq(schema.orders.id, id),
-    with: { items: true, deliveries: { orderBy: asc(schema.deliveries.createdAt) } },
+    with: {
+      items: true,
+      deliveries: { orderBy: asc(schema.deliveries.createdAt) },
+      giftCards: true,
+      subscriptions: true,
+    },
   });
   if (!order) notFound();
   const money = (amount: number) => formatMoney(amount, order.currency);
+  const subscription = order.subscriptions[0] ?? null;
 
   const actions = (
     <div className="flex flex-wrap gap-2">
-      {order.status === "paid" && (
+      {subscription && !subscription.endedAt && (
+        <form action={orderAction}>
+          <input type="hidden" name="id" value={order.id} />
+          <input type="hidden" name="action" value="cancel-subscription" />
+          <ConfirmButton message="Cancel this subscription now? The plugin gets a REFUND and the rank goes away.">
+            Cancel subscription
+          </ConfirmButton>
+        </form>
+      )}
+      {order.status === "paid" && !order.renewalOf && (
         <form action={orderAction}>
           <input type="hidden" name="id" value={order.id} />
           <input type="hidden" name="action" value="recover" />
@@ -102,6 +117,12 @@ export default async function OrderPage({ params }: Props) {
               <dt>Subtotal</dt>
               <dd className="font-mono">{money(order.subtotal)}</dd>
             </div>
+            {order.giftCardAmount > 0 && (
+              <div className="flex justify-between text-accent-3">
+                <dt>Paid with gift card</dt>
+                <dd className="font-mono">-{money(order.giftCardAmount)}</dd>
+              </div>
+            )}
             {order.discount > 0 && (
               <div className="flex justify-between text-accent">
                 <dt>Discount ({order.couponCode})</dt>
@@ -128,6 +149,22 @@ export default async function OrderPage({ params }: Props) {
                 <dt className="text-muted">Player</dt>
                 <dd className="font-semibold">{order.playerName}</dd>
               </div>
+              {order.giftFrom && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Gift from</dt>
+                  <dd className="font-semibold">{order.giftFrom}</dd>
+                </div>
+              )}
+              {order.renewalOf && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Renewal of</dt>
+                  <dd>
+                    <Link href={`/admin/orders/${order.renewalOf}`} className="font-mono text-accent hover:underline">
+                      #{order.renewalOf}
+                    </Link>
+                  </dd>
+                </div>
+              )}
               <div className="flex justify-between gap-4">
                 <dt className="text-muted">UUID</dt>
                 <dd className="truncate font-mono text-xs">{order.playerUuid ?? "offline / bedrock"}</dd>
@@ -161,6 +198,54 @@ export default async function OrderPage({ params }: Props) {
               )}
             </dl>
           </Panel>
+
+          {subscription && (
+            <Panel title="Subscription">
+              <dl className="space-y-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Status</dt>
+                  <dd>
+                    <span className={`badge ${subscription.endedAt ? "bg-surface-3 text-faint" : "bg-accent/15 text-accent"}`}>
+                      {subscription.cancelAtPeriodEnd && !subscription.endedAt ? "cancels at period end" : subscription.status}
+                    </span>
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">{subscription.endedAt ? "Ended" : "Renews"}</dt>
+                  <dd className="font-mono text-xs">{when(subscription.endedAt ?? subscription.currentPeriodEnd)}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Stripe</dt>
+                  <dd>
+                    <a
+                      href={`https://dashboard.stripe.com/subscriptions/${subscription.stripeSubscriptionId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-xs text-accent hover:underline"
+                    >
+                      {subscription.stripeSubscriptionId}
+                    </a>
+                  </dd>
+                </div>
+              </dl>
+            </Panel>
+          )}
+
+          {order.giftCards.length > 0 && (
+            <Panel title="Gift cards issued">
+              <ul className="space-y-2 text-sm">
+                {order.giftCards.map((card) => (
+                  <li key={card.id} className="flex items-center justify-between gap-3">
+                    <span className="font-mono tracking-wider">{card.code}</span>
+                    <span className="text-muted">
+                      {money(card.balance)} / {money(card.initialBalance)}
+                      {!card.active && " · disabled"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           <Panel title="Deliveries">
             {order.deliveries.length === 0 ? (

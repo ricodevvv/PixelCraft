@@ -51,10 +51,11 @@ export function saleFor(product: Pick<Product, "categoryId">, sales: ActiveSale[
 
 /**
  * Applies running sales to products. The sale price replaces price, and the old one shows up struck through.
+ * Subscriptions and gift cards are left alone: a sale would lock a subscription's price forever.
  */
 export function applySales<T extends Product>(products: T[], sales: ActiveSale[]): WithSale<T>[] {
   return products.map((product) => {
-    const sale = saleFor(product, sales);
+    const sale = product.kind === "item" ? saleFor(product, sales) : null;
     if (!sale) return { ...product, sale: null };
     return {
       ...product,

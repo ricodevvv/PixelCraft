@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     db
       .select({
         day: sql<string>`to_char(date_trunc('day', ${schema.orders.paidAt} at time zone 'UTC'), 'YYYY-MM-DD')`,
-        total: sql<number>`sum(${schema.orders.total})::int`,
+        total: sql<number>`sum(${schema.orders.total} - ${schema.orders.giftCardAmount})::int`,
         orders: sql<number>`count(*)::int`,
       })
       .from(schema.orders)

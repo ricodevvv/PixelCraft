@@ -51,6 +51,9 @@ export async function getProductCounts() {
   return new Map(rows.map((row) => [row.categoryId, row.count]));
 }
 
+const supporter = sql<string>`coalesce(${schema.orders.giftFrom}, ${schema.orders.playerName})`;
+const cash = sql`${schema.orders.total} - ${schema.orders.giftCardAmount}`;
+
 function startOfMonth() {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -60,7 +63,7 @@ export async function getRecentSupporters(limit = 8) {
   return getDb()
     .select({
       id: schema.orders.id,
-      playerName: schema.orders.playerName,
+      playerName: sql<string>`coalesce(${schema.orders.giftFrom}, ${schema.orders.playerName})`,
       paidAt: schema.orders.paidAt,
       itemName: sql<string>`(select ${schema.orderItems.name} from ${schema.orderItems} where ${schema.orderItems.orderId} = ${schema.orders.id} order by ${schema.orderItems.total} desc limit 1)`,
     })
@@ -72,18 +75,18 @@ export async function getRecentSupporters(limit = 8) {
 
 export async function getTopSupporter() {
   const [top] = await getDb()
-    .select({ playerName: schema.orders.playerName, total: sql<number>`sum(${schema.orders.total})::int` })
+    .select({ playerName: supporter, total: sql<number>`sum(${cash})::int` })
     .from(schema.orders)
     .where(and(eq(schema.orders.status, "paid"), gte(schema.orders.paidAt, startOfMonth())))
-    .groupBy(schema.orders.playerName)
-    .orderBy(desc(sql`sum(${schema.orders.total})`))
+    .groupBy(supporter)
+    .orderBy(desc(sql`sum(${cash})`))
     .limit(1);
   return top ?? null;
 }
 
 export async function getMonthRevenue(): Promise<number> {
   const [row] = await getDb()
-    .select({ total: sql<number>`coalesce(sum(${schema.orders.total}), 0)::int` })
+    .select({ total: sql<number>`coalesce(sum(${cash}), 0)::int` })
     .from(schema.orders)
     .where(and(eq(schema.orders.status, "paid"), gte(schema.orders.paidAt, startOfMonth())));
   return row?.total ?? 0;

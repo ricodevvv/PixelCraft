@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Check, Minus, Plus, ShoppingBag } from "lucide-react";
 import { cart } from "@/lib/cart-store";
-import type { CardProduct } from "./product-card";
+import { intervalSuffix, type CardProduct } from "./product-card";
 import { useStore } from "./store-provider";
 import { gsap } from "./gsap";
 
@@ -24,9 +24,10 @@ export function AddToCart({ product, artId }: { product: CardProduct; artId: str
         name: product.name,
         price: product.price,
         image: product.image,
-        maxQuantity: product.maxQuantity,
+        maxQuantity: product.kind === "subscription" ? 1 : product.maxQuantity,
+        interval: product.kind === "subscription" ? product.interval ?? "month" : null,
       },
-      quantity,
+      product.kind === "subscription" ? 1 : quantity,
     );
     const art = document.getElementById(artId);
     if (art) flyToCart(art);
@@ -37,7 +38,7 @@ export function AddToCart({ product, artId }: { product: CardProduct; artId: str
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {product.maxQuantity > 1 && (
+      {product.maxQuantity > 1 && product.kind !== "subscription" && (
         <div className="pixel-clip flex items-center bg-surface-2 p-1 [--step:4px]">
           <button type="button" className="btn btn-ghost btn-sm !p-2.5" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="-">
             <Minus className="size-4" />
@@ -57,7 +58,11 @@ export function AddToCart({ product, artId }: { product: CardProduct; artId: str
       )}
       <button ref={button} type="button" onClick={add} className="btn btn-primary h-14 flex-1 text-lg sm:flex-none sm:px-8">
         {added ? <Check className="size-5" /> : <ShoppingBag className="size-5" />}
-        {added ? dict.product.added : `${dict.product.add} · ${money(product.price * quantity)}`}
+        {added
+          ? dict.product.added
+          : product.kind === "subscription"
+            ? `${dict.product.subscribe} · ${money(product.price)}${intervalSuffix(product, dict.product)}`
+            : `${dict.product.add} · ${money(product.price * quantity)}`}
       </button>
       {added && (
         <button type="button" onClick={() => setCartOpen(true)} className="btn btn-ghost h-14">

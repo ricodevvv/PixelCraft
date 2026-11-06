@@ -71,7 +71,12 @@ export default async function ProductPage({ params }: Props) {
           {product.tagline && <p className="mt-4 text-lg text-muted">{product.tagline}</p>}
 
           <div className="mt-8 flex items-baseline gap-3">
-            <span className="font-pixel text-5xl text-accent">{money(product.price)}</span>
+            <span className="font-pixel text-5xl text-accent">
+              {money(product.price)}
+              {product.kind === "subscription" && (
+                <span className="text-2xl text-muted">{product.interval === "year" ? dict.product.perYear : dict.product.perMonth}</span>
+              )}
+            </span>
             {onSale && <span className="font-mono text-xl text-faint line-through">{money(product.comparePrice!)}</span>}
           </div>
           {product.sale && (
@@ -87,9 +92,14 @@ export default async function ProductPage({ params }: Props) {
             <AddToCart product={toCard(product)} artId="product-art" />
           </div>
 
-          <p className="mt-6 inline-flex items-center gap-2 text-sm text-faint">
-            <Server className="size-4" /> {dict.product.deliveredTo} <span className="font-mono text-muted">{product.group}</span>
-          </p>
+          {product.kind === "giftcard" ? (
+            <p className="mt-6 text-sm text-faint">{dict.product.giftCardNote}</p>
+          ) : (
+            <p className="mt-6 inline-flex items-center gap-2 text-sm text-faint">
+              <Server className="size-4" /> {dict.product.deliveredTo} <span className="font-mono text-muted">{product.group}</span>
+            </p>
+          )}
+          {product.kind === "subscription" && <p className="mt-2 text-sm text-faint">{dict.product.subscriptionNote}</p>}
 
           {product.description && (
             <div className="pixel-clip pixel-frame mt-8 p-6 leading-relaxed whitespace-pre-line text-muted [--step:5px]">

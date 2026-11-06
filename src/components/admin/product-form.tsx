@@ -37,6 +37,28 @@ export function ProductForm({ product, categories, groups, currency }: Props) {
         </Panel>
 
         <div className="space-y-6">
+          <Panel title="Type">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Kind">
+                <select name="kind" defaultValue={product?.kind ?? "item"} className="input">
+                  <option value="item">Item or rank</option>
+                  <option value="subscription">Subscription</option>
+                  <option value="giftcard">Gift card</option>
+                </select>
+              </Field>
+              <Field label="Billing" hint="Only for subscriptions.">
+                <select name="interval" defaultValue={product?.interval ?? "month"} className="input">
+                  <option value="month">Monthly</option>
+                  <option value="year">Yearly</option>
+                </select>
+              </Field>
+            </div>
+            <p className="mt-4 text-xs text-faint">
+              Subscriptions renew through Stripe and get a REFUND in-game when they end. Gift cards are sold as codes worth their
+              price, they skip sales and coupons and don&apos;t need delivery settings.
+            </p>
+          </Panel>
+
           <Panel title="Pricing">
             <div className="grid grid-cols-2 gap-4">
               <Field label={`Price (${currency})`}>
@@ -53,8 +75,8 @@ export function ProductForm({ product, categories, groups, currency }: Props) {
 
           <Panel title="Delivery">
             <div className="space-y-5">
-              <Field label="Server group" hint="Matches the Group of the server that should deliver it.">
-                <input name="group" list="server-groups" required defaultValue={product?.group ?? groups[0] ?? ""} className="input font-mono" />
+              <Field label="Server group" hint="Matches the Group of the server that should deliver it. Not used by gift cards.">
+                <input name="group" list="server-groups" defaultValue={product?.group ?? groups[0] ?? ""} className="input font-mono" />
                 <datalist id="server-groups">
                   {groups.map((group) => (
                     <option key={group} value={group} />
@@ -62,7 +84,7 @@ export function ProductForm({ product, categories, groups, currency }: Props) {
                 </datalist>
               </Field>
               <Field label="PixelBuy item id" hint="The key of the item in the plugin's storeitems config, like rank-vip.">
-                <input name="itemId" required defaultValue={product?.itemId} className="input font-mono" />
+                <input name="itemId" defaultValue={product?.itemId} className="input font-mono" />
               </Field>
             </div>
           </Panel>
