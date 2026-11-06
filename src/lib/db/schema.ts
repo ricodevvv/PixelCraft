@@ -137,6 +137,21 @@ export const servers = pgTable(
   (t) => [uniqueIndex("servers_secret_idx").on(t.secret)],
 );
 
+export const sales = pgTable(
+  "sales",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    percent: integer("percent").notNull(),
+    categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("sales_window_idx").on(t.startsAt, t.endsAt)],
+);
+
 export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
   count: integer("count").notNull(),
@@ -171,3 +186,4 @@ export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type Delivery = typeof deliveries.$inferSelect;
 export type Server = typeof servers.$inferSelect;
+export type Sale = typeof sales.$inferSelect;

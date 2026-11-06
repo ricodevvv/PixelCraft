@@ -358,6 +358,55 @@ export async function testEmail(_state: FormState, form: FormData): Promise<Form
   }
 }
 
+
+export async function createSale(_state: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      name: z.string().trim().min(1, "Give the sale a name").max(60),
+      percent: z.coerce.number().int().min(1, "Discount must be at least 1%").max(90, "Keep it at 90% or less"),
+      scope: z.string(),
+      startsAt: z.iso.datetime({ offset: true, message: "Pick a start date" }),
+      endsAt: z.iso.datetime({ offset: true, message: "Pick an end date" }),
+    })
+    .safeParse({
+      name: form.get("name"),
+      percent: form.get("percent"),
+      scope: form.get("scope") ?? "all",
+      startsAt: form.get("startsAt"),
+      endsAt: form.get("endsAt"),
+    });
+  if (!parsed.success) return { error: firstIssue(parsed.error) };
+  const startsAt = new Date(parsed.data.startsAt);
+  const endsAt = new Date(parsed.data.endsAt);
+  if (endsAt <= startsAt) return { error: "The sale has to end after it starts." };
+  if (endsAt <= new Date()) return { error: "That end date already passed." };
+  const categoryId = parsed.data.scope === "all" ? null : Number(parsed.data.scope);
+  if (categoryId !== null && !Number.isInteger(categoryId)) return { error: "Pick a category or the whole store." };
+
+  await getDb().insert(schema.sales).values({ name: parsed.data.name, percent: parsed.data.percent, categoryId, startsAt, endsAt });
+  refreshStore();
+  revalidatePath("/admin/sales");
+  return { ok: `${parsed.data.name} saved.` };
+}
+
+export async function toggleSale(form: FormData) {
+  await requireAdmin();
+  await getDb()
+    .update(schema.sales)
+    .set({ active: form.get("active") === "true" })
+    .where(eq(schema.sales.id, Number(form.get("id"))));
+  refreshStore();
+  revalidatePath("/admin/sales");
+}
+
+export async function deleteSale(form: FormData) {
+  await requireAdmin();
+  await getDb().delete(schema.sales).where(eq(schema.sales.id, Number(form.get("id"))));
+  refreshStore();
+  revalidatePath("/admin/sales");
+}
+
 const IMAGE_TYPES: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",

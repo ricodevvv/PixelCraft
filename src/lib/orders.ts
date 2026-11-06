@@ -2,6 +2,7 @@ import "server-only";
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
 import type { Coupon, Product } from "./db/schema";
+import { withSales } from "./sales";
 
 export type CartLine = { productId: number; quantity: number };
 
@@ -54,7 +55,7 @@ export async function priceCart(input: CartLine[], couponCode?: string | null): 
         .where(and(inArray(schema.products.id, ids), eq(schema.products.active, true)))
     : [];
 
-  const lines = rows.map((product) => {
+  const lines = (await withSales(rows)).map((product) => {
     const quantity = Math.min(merged.get(product.id) ?? 1, Math.max(1, product.maxQuantity));
     return { product, quantity, unitPrice: product.price, total: product.price * quantity };
   });

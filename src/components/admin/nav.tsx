@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, FolderTree, LayoutDashboard, Receipt, Server, Settings, TicketPercent } from "lucide-react";
+import { BadgePercent, Boxes, FolderTree, LayoutDashboard, Receipt, Server, Settings, TicketPercent } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: Receipt },
   { href: "/admin/products", label: "Products", icon: Boxes },
   { href: "/admin/categories", label: "Categories", icon: FolderTree },
+  { href: "/admin/sales", label: "Sales", icon: BadgePercent },
   { href: "/admin/coupons", label: "Coupons", icon: TicketPercent },
   { href: "/admin/servers", label: "Servers", icon: Server },
   { href: "/admin/settings", label: "Settings", icon: Settings },

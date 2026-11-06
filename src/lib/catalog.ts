@@ -2,18 +2,20 @@ import "server-only";
 import { cache } from "react";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb, schema } from "./db";
+import { withSales } from "./sales";
 
 export const getCategories = cache(async () =>
   getDb().select().from(schema.categories).orderBy(asc(schema.categories.sort), asc(schema.categories.name)),
 );
 
 export async function getFeaturedProducts(limit = 8) {
-  return getDb()
+  const rows = await getDb()
     .select()
     .from(schema.products)
     .where(and(eq(schema.products.active, true), eq(schema.products.featured, true)))
     .orderBy(asc(schema.products.sort), asc(schema.products.id))
     .limit(limit);
+  return withSales(rows);
 }
 
 export async function getCategoryWithProducts(slug: string) {
@@ -25,7 +27,7 @@ export async function getCategoryWithProducts(slug: string) {
     .from(schema.products)
     .where(and(eq(schema.products.categoryId, category.id), eq(schema.products.active, true)))
     .orderBy(asc(schema.products.sort), asc(schema.products.price));
-  return { category, products };
+  return { category, products: await withSales(products) };
 }
 
 export async function getProduct(slug: string) {
@@ -35,7 +37,9 @@ export async function getProduct(slug: string) {
     .leftJoin(schema.categories, eq(schema.products.categoryId, schema.categories.id))
     .where(and(eq(schema.products.slug, slug), eq(schema.products.active, true)))
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+  const [product] = await withSales([row.product]);
+  return { product, category: row.category };
 }
 
 export async function getProductCounts() {
