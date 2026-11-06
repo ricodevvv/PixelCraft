@@ -30,12 +30,13 @@ function errorText(dict: Dictionary, code: string) {
 }
 
 export function CartDrawer() {
-  const { dict, money, cartOpen, setCartOpen, setUserOpen } = useStore();
+  const { dict, money, cartOpen, setCartOpen, setUserOpen, providers } = useStore();
   const { items, player, coupon, giftCard, recipient } = useCart();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [couponInput, setCouponInput] = useState(coupon);
   const [giftCardInput, setGiftCardInput] = useState(giftCard);
   const [isGift, setIsGift] = useState(false);
+  const [method, setMethod] = useState<"stripe" | "mercadopago">(providers.stripe ? "stripe" : "mercadopago");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -109,6 +110,8 @@ export function CartDrawer() {
   const couponError = coupon && quote?.couponError ? errorText(dict, `coupon_${quote.couponError}`) : null;
   const giftCardError = giftCard && quote?.giftCardError ? errorText(dict, `giftcard_${quote.giftCardError}`) : null;
   const cartError = quote?.cartError ? errorText(dict, quote.cartError) : null;
+  const hasSubscription = items.some((item) => item.interval);
+  const provider = hasSubscription ? "stripe" : method;
   const suffix = (interval?: "month" | "year" | null) => (interval ? (interval === "year" ? dict.product.perYear : dict.product.perMonth) : "");
 
   function submit() {
@@ -124,6 +127,7 @@ export function CartDrawer() {
         email,
         coupon: coupon || null,
         giftCard: giftCard || null,
+        provider: providers.stripe && providers.mercadopago ? provider : undefined,
         lines: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
       });
       if ("url" in result) {
@@ -316,6 +320,38 @@ export function CartDrawer() {
                 </dd>
               </div>
             </dl>
+
+            {providers.stripe && providers.mercadopago && (quote?.due ?? localSubtotal) > 0 && (
+              <div className="drawer-stagger">
+                <p className="font-label text-[11px] text-muted uppercase">{dict.cart.payWith}</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: "stripe", label: dict.cart.card, hint: dict.cart.cardHint },
+                      { id: "mercadopago", label: dict.cart.mercadopago, hint: dict.cart.mercadopagoHint },
+                    ] as const
+                  ).map((option) => {
+                    const disabled = option.id === "mercadopago" && hasSubscription;
+                    const selected = provider === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setMethod(option.id)}
+                        aria-pressed={selected}
+                        className={`pixel-clip px-3 py-2.5 text-left transition-colors [--step:3px] disabled:opacity-40 ${
+                          selected ? "bg-accent text-accent-ink" : "bg-surface-3 text-text hover:bg-line-strong"
+                        }`}
+                      >
+                        <span className="block text-sm font-semibold">{option.label}</span>
+                        <span className={`block text-[11px] leading-tight ${selected ? "text-accent-ink/80" : "text-muted"}`}>{option.hint}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {(error || cartError) && <p className="text-sm text-danger">{error ?? cartError}</p>}
 

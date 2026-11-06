@@ -1,6 +1,8 @@
 import { getCategories } from "@/lib/catalog";
 import { getDictionary } from "@/lib/i18n";
+import { isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { getSettings } from "@/lib/settings";
+import { isStripeConfigured } from "@/lib/stripe";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { Footer } from "@/components/store/footer";
 import { Header } from "@/components/store/header";
@@ -21,6 +23,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       currency={settings.currency}
       storeName={settings.storeName}
       requirePremium={settings.requirePremium}
+      providers={{ stripe: isStripeConfigured(), mercadopago: isMercadoPagoConfigured() }}
     >
       <SmoothScroll />
       <div className="noise pointer-events-none fixed inset-0 z-[80]" />

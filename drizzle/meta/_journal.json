@@ -29,6 +29,13 @@
       "when": 1793995120978,
       "tag": "0003_gifts_and_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793996346934,
+      "tag": "0004_mercadopago",
+      "breakpoints": true
     }
   ]
 }

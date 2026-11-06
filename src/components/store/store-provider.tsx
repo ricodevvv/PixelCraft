@@ -11,6 +11,7 @@ type StoreConfig = {
   currency: string;
   storeName: string;
   requirePremium: boolean;
+  providers: { stripe: boolean; mercadopago: boolean };
 };
 
 type StoreContextValue = StoreConfig & {
@@ -41,6 +42,7 @@ export function StoreProvider({
   currency,
   storeName,
   requirePremium,
+  providers,
 }: StoreConfig & { children: ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -103,6 +105,7 @@ export function StoreProvider({
       currency,
       storeName,
       requirePremium,
+      providers,
       money,
       cartOpen,
       userOpen,
@@ -111,7 +114,7 @@ export function StoreProvider({
       cartButtonRef,
       flyToCart,
     }),
-    [dict, locale, currency, storeName, requirePremium, money, cartOpen, userOpen, flyToCart],
+    [dict, locale, currency, storeName, requirePremium, providers, money, cartOpen, userOpen, flyToCart],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

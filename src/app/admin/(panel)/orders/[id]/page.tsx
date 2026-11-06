@@ -60,7 +60,9 @@ export default async function OrderPage({ params }: Props) {
           <ConfirmButton
             className="btn btn-danger btn-sm"
             message={
-              order.stripePaymentIntent
+              order.mpPaymentId
+                ? "Refund the payment in Mercado Pago and run onRefund in-game?"
+                : order.stripePaymentIntent
                 ? "Refund the payment in Stripe and run onRefund in-game?"
                 : "Mark as refunded and run onRefund in-game?"
             }
@@ -181,6 +183,18 @@ export default async function OrderPage({ params }: Props) {
                 <dt className="text-muted">Paid</dt>
                 <dd className="font-mono text-xs">{when(order.paidAt)}</dd>
               </div>
+              {order.paymentProvider && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">Paid with</dt>
+                  <dd>{order.paymentProvider === "mercadopago" ? "Mercado Pago" : "Stripe"}</dd>
+                </div>
+              )}
+              {order.mpPaymentId && (
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted">MP payment</dt>
+                  <dd className="font-mono text-xs">{order.mpPaymentId}</dd>
+                </div>
+              )}
               {order.stripePaymentIntent && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted">Stripe</dt>

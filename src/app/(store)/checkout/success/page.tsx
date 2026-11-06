@@ -13,7 +13,7 @@ import { PlayerAvatar } from "@/components/store/player-avatar";
 
 export const metadata: Metadata = { title: "Thanks!", robots: { index: false } };
 
-type Props = { searchParams: Promise<{ order?: string; session?: string }> };
+type Props = { searchParams: Promise<{ order?: string; session?: string; preference_id?: string }> };
 
 export default async function SuccessPage({ searchParams }: Props) {
   const settings = await getSettings();
@@ -28,7 +28,10 @@ export default async function SuccessPage({ searchParams }: Props) {
       })
     : undefined;
   const paid = order?.status === "paid";
-  const isBuyer = Boolean(order?.stripeSessionId && params.session === order.stripeSessionId);
+  const isBuyer = Boolean(
+    (order?.stripeSessionId && params.session === order.stripeSessionId) ||
+      (order?.mpPreferenceId && params.preference_id === order.mpPreferenceId),
+  );
   const codes = paid && isBuyer ? order.giftCards : [];
   const manageUrl = paid && isBuyer && order.stripeSubscriptionId ? await subscriptionManageUrl(await getBaseUrl(), order.stripeSubscriptionId) : null;
 

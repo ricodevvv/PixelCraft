@@ -6,6 +6,8 @@ import { after } from "next/server";
 import { getDb, schema } from "@/lib/db";
 import { resolvePlayer, type Player } from "@/lib/mojang";
 import { notifyOrderPaid } from "@/lib/notify";
+import { createPreference, isMercadoPagoConfigured } from "@/lib/mercadopago";
+import { toMajor } from "@/lib/money";
 import { markOrderPaid, priceCart, reserveGiftCard } from "@/lib/orders";
 import { rateLimitByIp } from "@/lib/rate-limit";
 import { getSettings } from "@/lib/settings";
@@ -18,6 +20,7 @@ const checkoutSchema = z.object({
   email: z.union([z.email().max(200), z.literal("")]).optional(),
   coupon: z.string().max(64).optional().nullable(),
   giftCard: z.string().max(64).optional().nullable(),
+  provider: z.enum(["stripe", "mercadopago"]).optional(),
   lines: z.array(z.object({ productId: z.number().int(), quantity: z.number().int().min(1).max(999) })).min(1).max(50),
 });
 
@@ -53,7 +56,16 @@ export async function checkout(input: z.input<typeof checkoutSchema>): Promise<C
   if (cart.cartError) return { error: cart.cartError };
   if (cart.giftCardError) return { error: `giftcard_${cart.giftCardError}` };
   const subscription = cart.subscription;
-  if ((cart.due > 0 || subscription) && !isStripeConfigured()) return { error: "payments_disabled" };
+  const provider =
+    parsed.data.provider === "mercadopago" && isMercadoPagoConfigured()
+      ? "mercadopago"
+      : isStripeConfigured()
+        ? "stripe"
+        : isMercadoPagoConfigured()
+          ? "mercadopago"
+          : null;
+  if (subscription && provider === "mercadopago") return { error: "mercadopago_subscription" };
+  if ((cart.due > 0 || subscription) && !provider) return { error: "payments_disabled" };
 
   let order: typeof schema.orders.$inferSelect;
   try {
@@ -71,6 +83,7 @@ export async function checkout(input: z.input<typeof checkoutSchema>): Promise<C
           total: cart.total,
           giftCardAmount: cart.giftCardAmount,
           couponCode: cart.coupon?.code ?? null,
+          paymentProvider: cart.due > 0 || subscription ? provider : null,
         })
         .returning();
       await tx.insert(schema.orderItems).values(
@@ -101,6 +114,29 @@ export async function checkout(input: z.input<typeof checkoutSchema>): Promise<C
   if (cart.due === 0 && !subscription) {
     if (await markOrderPaid(order.id)) after(() => notifyOrderPaid(order.id, baseUrl));
     return { url: `${baseUrl}/checkout/success?order=${order.id}` };
+  }
+
+  if (provider === "mercadopago") {
+    const reduced = cart.discount + cart.giftCardAmount > 0;
+    const preference = await createPreference({
+      orderId: order.id,
+      currency,
+      email: email || null,
+      baseUrl,
+      successUrl: `${baseUrl}/checkout/success?order=${order.id}`,
+      items: reduced
+        ? [{ id: `order-${order.id}`, title: `${settings.storeName} #${order.id}`, quantity: 1, unitPrice: toMajor(cart.due, currency) }]
+        : cart.lines.map((line) => ({
+            id: line.product.slug,
+            title: line.product.name,
+            description: line.product.tagline || undefined,
+            quantity: line.quantity,
+            unitPrice: toMajor(line.unitPrice, currency),
+            pictureUrl: line.product.image?.startsWith("https://") ? line.product.image : undefined,
+          })),
+    });
+    await getDb().update(schema.orders).set({ mpPreferenceId: preference.id }).where(eq(schema.orders.id, order.id));
+    return { url: preference.url };
   }
 
   const stripe = getStripe();

@@ -67,6 +67,11 @@ const en = {
     giftCard: "Gift card code",
     giftCardLine: "Gift card",
     due: "To pay",
+    payWith: "Pay with",
+    card: "Card",
+    cardHint: "Cards, Apple Pay, Google Pay",
+    mercadopago: "Mercado Pago",
+    mercadopagoHint: "OXXO, local cards, installments",
   },
   user: {
     set: "Set username",
@@ -107,6 +112,7 @@ const en = {
     giftcard_subscription: "Gift cards can't pay for subscriptions.",
     giftcard_on_subscription: "Gift cards can't pay for subscriptions.",
     subscription_alone: "Subscriptions are checked out on their own. Remove the other items first.",
+    mercadopago_subscription: "Subscriptions are paid by card. Pick Card to subscribe.",
     generic: "Something went wrong, try again.",
   },
   sale: {
@@ -207,6 +213,11 @@ const es: Dictionary = {
     giftCard: "Código de tarjeta de regalo",
     giftCardLine: "Tarjeta de regalo",
     due: "A pagar",
+    payWith: "Pagar con",
+    card: "Tarjeta",
+    cardHint: "Tarjetas, Apple Pay, Google Pay",
+    mercadopago: "Mercado Pago",
+    mercadopagoHint: "OXXO, tarjetas locales, meses sin intereses",
   },
   user: {
     set: "Poner usuario",
@@ -247,6 +258,7 @@ const es: Dictionary = {
     giftcard_subscription: "Las tarjetas de regalo no sirven para suscripciones.",
     giftcard_on_subscription: "Las tarjetas de regalo no sirven para suscripciones.",
     subscription_alone: "Las suscripciones se pagan solas. Quita los otros productos primero.",
+    mercadopago_subscription: "Las suscripciones se pagan con tarjeta. Elige Tarjeta para suscribirte.",
     generic: "Algo salió mal, intenta otra vez.",
   },
   sale: {

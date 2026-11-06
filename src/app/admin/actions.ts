@@ -13,6 +13,7 @@ import { toMinor } from "@/lib/money";
 import { isDiscordWebhook, isEmailConfigured, notifyOrderPaid, sendTestDiscord, sendTestEmail } from "@/lib/notify";
 import { cancelOrder, endSubscription, markOrderPaid, newGiftCode, normalizeGiftCode, recoverOrder, refundOrder } from "@/lib/orders";
 import { getSettings, saveSettings } from "@/lib/settings";
+import { isMercadoPagoConfigured, refundPayment } from "@/lib/mercadopago";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { clientIp, rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import { isStorageConfigured, uploadFile } from "@/lib/storage";
@@ -348,6 +349,9 @@ export async function orderAction(form: FormData) {
   } else if (action === "refund") {
     const [order] = await getDb().select().from(schema.orders).where(eq(schema.orders.id, id)).limit(1);
     if (order?.stripeSubscriptionId) await cancelStripeSubscription(order.stripeSubscriptionId);
+    if (order?.paymentProvider === "mercadopago" && order.mpPaymentId && isMercadoPagoConfigured()) {
+      await refundPayment(order.mpPaymentId);
+    }
     if (order?.stripePaymentIntent && isStripeConfigured()) {
       try {
         await getStripe().refunds.create({ payment_intent: order.stripePaymentIntent });

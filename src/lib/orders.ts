@@ -249,7 +249,7 @@ async function revokeDeliveries(tx: Tx, orderId: number) {
   );
 }
 
-type PaidExtras = { paymentIntent?: string | null; email?: string | null; subscriptionId?: string | null };
+type PaidExtras = { paymentIntent?: string | null; email?: string | null; subscriptionId?: string | null; mpPaymentId?: string | null };
 
 /**
  * Flips a pending order to paid, queues it for every server group in it and issues its gift cards.
@@ -264,6 +264,7 @@ export async function markOrderPaid(orderId: number, extras: PaidExtras = {}): P
         paidAt: new Date(),
         stripePaymentIntent: extras.paymentIntent ?? null,
         stripeSubscriptionId: extras.subscriptionId ?? null,
+        mpPaymentId: extras.mpPaymentId ?? null,
         email: extras.email ? sql`coalesce(${schema.orders.email}, ${extras.email})` : undefined,
       })
       .where(and(eq(schema.orders.id, orderId), eq(schema.orders.status, "pending")))

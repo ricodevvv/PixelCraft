@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ExternalLink, LogOut } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
+import { isMercadoPagoConfigured } from "@/lib/mercadopago";
 import { isStripeConfigured } from "@/lib/stripe";
 import { AdminNav } from "@/components/admin/nav";
 import { PixelSprite } from "@/components/ui/pixel-sprite";
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: { default: "Admin", template: "%s · 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   const settings = await getSettings();
-  const stripeReady = isStripeConfigured() && Boolean(process.env.STRIPE_WEBHOOK_SECRET);
+  const paymentsReady = (isStripeConfigured() && Boolean(process.env.STRIPE_WEBHOOK_SECRET)) || isMercadoPagoConfigured();
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[240px_1fr]">
@@ -49,10 +50,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
       <div className="min-w-0 px-4 py-8 sm:px-8 lg:px-10">
-        {!stripeReady && (
+        {!paymentsReady && (
           <div className="pixel-clip mb-6 bg-warning/10 px-4 py-3 text-sm text-warning [--step:3px]">
-            Stripe isn&apos;t fully set up. Add <code className="font-mono">STRIPE_SECRET_KEY</code> and{" "}
-            <code className="font-mono">STRIPE_WEBHOOK_SECRET</code> to take real payments. Free orders (100% coupons) still work.
+            No payment provider is fully set up. Add <code className="font-mono">STRIPE_SECRET_KEY</code> and{" "}
+            <code className="font-mono">STRIPE_WEBHOOK_SECRET</code>, or <code className="font-mono">MERCADOPAGO_ACCESS_TOKEN</code>, to take
+            real payments. Free orders (100% coupons) still work.
           </div>
         )}
         <div className="mx-auto max-w-6xl">{children}</div>
