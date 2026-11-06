@@ -3,15 +3,18 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { checkPassword, createSession, destroySession, requireAdmin } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
 import { locales } from "@/lib/i18n";
 import { toMinor } from "@/lib/money";
+import { isDiscordWebhook, isEmailConfigured, notifyOrderPaid, sendTestDiscord, sendTestEmail } from "@/lib/notify";
 import { cancelOrder, markOrderPaid, recoverOrder, refundOrder } from "@/lib/orders";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { getBaseUrl } from "@/lib/url";
 
 export type FormState = { error?: string; ok?: string } | null;
 
@@ -259,6 +262,10 @@ export async function updateSettings(_state: FormState, form: FormData): Promise
       announcement: z.string().trim().max(160),
       serverAddress: z.string().trim().max(120),
       discordUrl: z.union([z.literal(""), z.url()]),
+      discordWebhook: z
+        .string()
+        .trim()
+        .refine((value) => value === "" || isDiscordWebhook(value), "Paste a Discord webhook URL (https://discord.com/api/webhooks/...)"),
       currency: z
         .string()
         .trim()
@@ -298,7 +305,10 @@ export async function orderAction(form: FormData) {
   if (action === "recover") {
     await recoverOrder(id);
   } else if (action === "mark-paid") {
-    await markOrderPaid(id);
+    if (await markOrderPaid(id)) {
+      const baseUrl = await getBaseUrl();
+      after(() => notifyOrderPaid(id, baseUrl));
+    }
   } else if (action === "cancel") {
     await cancelOrder(id);
   } else if (action === "refund") {
@@ -315,4 +325,27 @@ export async function orderAction(form: FormData) {
   }
   revalidatePath(`/admin/orders/${id}`);
   revalidatePath("/admin/orders");
+}
+
+export async function testDiscord(_state: FormState, _form: FormData): Promise<FormState> {
+  await requireAdmin();
+  try {
+    await sendTestDiscord(await getBaseUrl());
+    return { ok: "Test message sent. Check your Discord channel." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Couldn't reach Discord." };
+  }
+}
+
+export async function testEmail(_state: FormState, form: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!isEmailConfigured()) return { error: "Set RESEND_API_KEY (and EMAIL_FROM) in your environment first." };
+  const parsed = z.email().safeParse(String(form.get("to") ?? "").trim());
+  if (!parsed.success) return { error: "Type a valid email address." };
+  try {
+    await sendTestEmail(parsed.data, await getBaseUrl());
+    return { ok: `Test receipt sent to ${parsed.data}.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Couldn't reach Resend." };
+  }
 }

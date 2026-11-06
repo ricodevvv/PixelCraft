@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { notifyOrderPaid } from "@/lib/notify";
+import { getBaseUrl } from "@/lib/url";
 import { getStripe } from "@/lib/stripe";
 import { cancelOrder, findOrderByPaymentIntent, markOrderPaid, refundOrder } from "@/lib/orders";
 
@@ -32,8 +34,9 @@ export async function POST(request: Request) {
     case "checkout.session.async_payment_succeeded": {
       const session = event.data.object;
       const orderId = orderIdOf(session);
-      if (orderId && session.payment_status !== "unpaid") {
-        await markOrderPaid(orderId, intentOf(session.payment_intent));
+      if (orderId && session.payment_status !== "unpaid" && (await markOrderPaid(orderId, intentOf(session.payment_intent)))) {
+        const baseUrl = await getBaseUrl();
+        after(() => notifyOrderPaid(orderId, baseUrl));
       }
       break;
     }

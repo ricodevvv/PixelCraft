@@ -2,8 +2,10 @@
 
 import { z } from "zod";
 import { eq } from "drizzle-orm";
+import { after } from "next/server";
 import { getDb, schema } from "@/lib/db";
 import { resolvePlayer } from "@/lib/mojang";
+import { notifyOrderPaid } from "@/lib/notify";
 import { allocateDiscount, markOrderPaid, priceCart } from "@/lib/orders";
 import { getSettings } from "@/lib/settings";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
@@ -71,7 +73,7 @@ export async function checkout(input: z.input<typeof checkoutSchema>): Promise<C
   const baseUrl = await getBaseUrl();
 
   if (cart.total === 0) {
-    await markOrderPaid(order.id);
+    if (await markOrderPaid(order.id)) after(() => notifyOrderPaid(order.id, baseUrl));
     return { url: `${baseUrl}/checkout/success?order=${order.id}` };
   }
 

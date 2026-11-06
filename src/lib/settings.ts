@@ -17,6 +17,7 @@ export type StoreSettings = {
   requirePremium: boolean;
   checkInterval: number;
   announcement: string;
+  discordWebhook: string;
 };
 
 export const defaultSettings: StoreSettings = {
@@ -32,6 +33,7 @@ export const defaultSettings: StoreSettings = {
   requirePremium: true,
   checkInterval: 30,
   announcement: "",
+  discordWebhook: "",
 };
 
 /**
@@ -40,10 +42,17 @@ export const defaultSettings: StoreSettings = {
  */
 export const getSettings = cache(async (): Promise<StoreSettings> => {
   await connection();
+  return readSettings();
+});
+
+/**
+ * Same as getSettings but without the request bits, for code that runs after the response.
+ */
+export async function readSettings(): Promise<StoreSettings> {
   const rows = await getDb().select().from(schema.settings);
   const stored = Object.fromEntries(rows.map((row) => [row.key, row.value]));
   return { ...defaultSettings, ...stored } as StoreSettings;
-});
+}
 
 /**
  * Saves a partial set of settings, one row per key.

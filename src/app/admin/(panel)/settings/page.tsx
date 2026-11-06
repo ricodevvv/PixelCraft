@@ -4,12 +4,14 @@ import { getSettings } from "@/lib/settings";
 import { AdminForm } from "@/components/admin/form";
 import { Field, PageHeader, Panel, Toggle } from "@/components/admin/field";
 import { HuePicker } from "@/components/admin/hue-picker";
-import { updateSettings } from "../../actions";
+import { isDiscordWebhook, isEmailConfigured } from "@/lib/notify";
+import { testDiscord, testEmail, updateSettings } from "../../actions";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const settings = await getSettings();
+  const discordReady = Boolean(settings.discordWebhook) && isDiscordWebhook(settings.discordWebhook);
   return (
     <>
       <PageHeader title="Settings" description="Branding and store behavior. Changes go live right away." />
@@ -41,6 +43,15 @@ export default async function SettingsPage() {
                 </Field>
                 <Field label="Discord invite">
                   <input name="discordUrl" type="url" defaultValue={settings.discordUrl} placeholder="https://discord.gg/..." className="input" />
+                </Field>
+                <Field label="Discord webhook" hint="Posts every purchase to a channel. Channel settings → Integrations → Webhooks → Copy URL.">
+                  <input
+                    name="discordWebhook"
+                    type="url"
+                    defaultValue={settings.discordWebhook}
+                    placeholder="https://discord.com/api/webhooks/..."
+                    className="input font-mono text-sm"
+                  />
                 </Field>
                 <Toggle name="requirePremium" label="Only accept premium (Mojang) usernames" defaultChecked={settings.requirePremium} />
                 <p className="-mt-2 text-xs text-faint">Bedrock names starting with a dot are always allowed.</p>
@@ -76,6 +87,38 @@ export default async function SettingsPage() {
           </div>
         </div>
       </AdminForm>
+
+      <h2 className="font-pixel mt-12 mb-5 text-2xl">Notifications</h2>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel title="Discord">
+          <p className="text-sm text-muted">
+            {discordReady
+              ? "Every paid order gets posted to your channel."
+              : "Add a webhook URL in the Server panel above and save to turn this on."}
+          </p>
+          <AdminForm action={testDiscord} submitLabel="Send test message">
+            {null}
+          </AdminForm>
+        </Panel>
+        <Panel title="Email receipts">
+          <p className="text-sm text-muted">
+            {isEmailConfigured() ? (
+              <>
+                Buyers who leave an email get a receipt from <span className="font-mono text-text">{process.env.EMAIL_FROM || "onboarding@resend.dev"}</span>.
+              </>
+            ) : (
+              <>
+                Add <span className="font-mono text-text">RESEND_API_KEY</span> and <span className="font-mono text-text">EMAIL_FROM</span> to your environment to send receipts with Resend.
+              </>
+            )}
+          </p>
+          <AdminForm action={testEmail} submitLabel="Send test receipt">
+            <Field label="Send to" className="mt-5">
+              <input name="to" type="email" required placeholder="you@example.com" className="input" />
+            </Field>
+          </AdminForm>
+        </Panel>
+      </div>
     </>
   );
 }
